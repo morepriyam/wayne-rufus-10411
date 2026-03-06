@@ -9,6 +9,15 @@
 				"$java"
 			],
 			"group": "build"
+		},
+		{
+			"label": "Deploy",
+			"type": "shell",
+			"command": "./gradlew deploy",
+			"problemMatcher": [
+				"$java"
+			],
+			"group": "build"
 		}
 	]
 }
