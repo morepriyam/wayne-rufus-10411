@@ -90,6 +90,7 @@ public class RobotContainer {
     private void configureBindings() {
         configureManualDriveBindings();
         limelight.setDefaultCommand(updateVisionCommand());
+        shooter.setDefaultCommand(shooter.run(shooter::stop));
 
         RobotModeTriggers.autonomous().or(RobotModeTriggers.teleop())
             .and(RobotModeTriggers.test().negate())
@@ -109,6 +110,8 @@ public class RobotContainer {
         driver.povUp().onTrue(hanger.positionCommand(Hanger.Position.HANGING));
         // D-Pad Down: Pull hanger down to hung (climbed) position
         driver.povDown().onTrue(hanger.positionCommand(Hanger.Position.HUNG));
+        // D-Pad Left: Reverse floor and shooter to clear a jam
+        driver.povLeft().whileTrue(Commands.parallel(floor.reverseCommand(), shooter.reverseCommand()));
     }
 
     private void configureManualDriveBindings() {

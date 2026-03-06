@@ -124,7 +124,7 @@ public class Hanger extends SubsystemBase {
             })
         )
         .unless(() -> isHomed)
-        .withInterruptBehavior(InterruptionBehavior.kCancelIncoming);
+        .withInterruptBehavior(InterruptionBehavior.kCancelSelf);
     }
 
     public boolean isHomed() {

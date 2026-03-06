@@ -29,6 +29,8 @@ import frc.robot.Ports;
 
 public class Shooter extends SubsystemBase {
     private static final AngularVelocity kVelocityTolerance = RPM.of(100);
+    // Minimum RPM before the floor/feeder feed sequence starts
+    private static final double kFeedThresholdRPM = 3500;
 
     private final TalonFX leftMotor, middleMotor, rightMotor;
     private final List<TalonFX> motors;
@@ -44,7 +46,7 @@ public class Shooter extends SubsystemBase {
         motors = List.of(leftMotor, middleMotor, rightMotor);
 
         configureMotor(leftMotor, InvertedValue.CounterClockwise_Positive);
-        configureMotor(middleMotor, InvertedValue.Clockwise_Positive);
+        configureMotor(middleMotor, InvertedValue.CounterClockwise_Positive);
         configureMotor(rightMotor, InvertedValue.Clockwise_Positive);
 
         SmartDashboard.putData(this);
@@ -59,7 +61,7 @@ public class Shooter extends SubsystemBase {
             )
             .withVoltage(
                 new VoltageConfigs()
-                    .withPeakReverseVoltage(Volts.of(0))
+                    .withPeakReverseVoltage(Volts.of(-12))
             )
             .withCurrentLimits(
                 new CurrentLimitsConfigs()
@@ -101,9 +103,21 @@ public class Shooter extends SubsystemBase {
         setPercentOutput(0.0);
     }
 
+    public Command reverseCommand() {
+        return startEnd(() -> setPercentOutput(-0.2), this::stop);
+    }
+
+    private static final double kSpinUpOvershootFactor = 1.15;
+
+    public double getDashboardTargetRPM() {
+        return dashboardTargetRPM;
+    }
+
     public Command spinUpCommand(double rpm) {
-        return runOnce(() -> setRPM(rpm))
-            .andThen(Commands.waitUntil(this::isVelocityWithinTolerance));
+        // Overshoot by 15% to ensure we reach target against bus voltage sag
+        // Hold shooter subsystem throughout so the default stop command doesn't interrupt
+        return run(() -> setRPM(rpm * kSpinUpOvershootFactor))
+            .until(() -> isNearRPM(rpm));
     }
 
     public Command dashboardSpinUpCommand() {
@@ -111,18 +125,30 @@ public class Shooter extends SubsystemBase {
     }
 
     public boolean isVelocityWithinTolerance() {
-        return motors.stream().allMatch(motor -> {
-            final boolean isInVelocityMode = motor.getAppliedControl().equals(velocityRequest);
-            final AngularVelocity currentVelocity = motor.getVelocity().getValue();
-            final AngularVelocity targetVelocity = velocityRequest.getVelocityMeasure();
-            return isInVelocityMode && currentVelocity.isNear(targetVelocity, kVelocityTolerance);
-        });
+        final AngularVelocity targetVelocity = velocityRequest.getVelocityMeasure();
+        return motors.stream().allMatch(motor -> 
+            motor.getVelocity().getValue().isNear(targetVelocity, kVelocityTolerance)
+        );
+    }
+
+    public boolean isAboveFeedThreshold() {
+        return motors.stream().allMatch(motor ->
+            motor.getVelocity().getValue().gte(RPM.of(kFeedThresholdRPM))
+        );
+    }
+
+    public boolean isNearRPM(double rpm) {
+        final AngularVelocity target = RPM.of(rpm);
+        return motors.stream().allMatch(motor ->
+            motor.getVelocity().getValue().isNear(target, kVelocityTolerance)
+        );
     }
 
     private void initSendable(SendableBuilder builder, TalonFX motor, String name) {
         builder.addDoubleProperty(name + " RPM", () -> motor.getVelocity().getValue().in(RPM), null);
         builder.addDoubleProperty(name + " Stator Current", () -> motor.getStatorCurrent().getValue().in(Amps), null);
         builder.addDoubleProperty(name + " Supply Current", () -> motor.getSupplyCurrent().getValue().in(Amps), null);
+        builder.addDoubleProperty(name + " Supply Voltage", () -> motor.getSupplyVoltage().getValue().in(Volts), null);
     }
 
     @Override
@@ -133,5 +159,6 @@ public class Shooter extends SubsystemBase {
         builder.addStringProperty("Command", () -> getCurrentCommand() != null ? getCurrentCommand().getName() : "null", null);
         builder.addDoubleProperty("Dashboard RPM", () -> dashboardTargetRPM, value -> dashboardTargetRPM = value);
         builder.addDoubleProperty("Target RPM", () -> velocityRequest.getVelocityMeasure().in(RPM), null);
+        builder.addBooleanProperty("Ready to Shoot", this::isVelocityWithinTolerance, null);
     }
 }

@@ -22,7 +22,8 @@ import frc.robot.Ports;
 public class Floor extends SubsystemBase {
     public enum Speed {
         STOP(0),
-        FEED(0.83);
+        FEED(0.83),
+        REVERSE(-0.83);
 
         private final double percentOutput;
 
@@ -44,7 +45,7 @@ public class Floor extends SubsystemBase {
         final TalonFXConfiguration config = new TalonFXConfiguration()
             .withMotorOutput(
                 new MotorOutputConfigs()
-                    .withInverted(InvertedValue.Clockwise_Positive)
+                    .withInverted(InvertedValue.CounterClockwise_Positive)
                     .withNeutralMode(NeutralModeValue.Brake)
             )
             .withCurrentLimits(
@@ -68,6 +69,10 @@ public class Floor extends SubsystemBase {
 
     public Command feedCommand() {
         return startEnd(() -> set(Speed.FEED), () -> set(Speed.STOP));
+    }
+
+    public Command reverseCommand() {
+        return startEnd(() -> set(Speed.REVERSE), () -> set(Speed.STOP));
     }
 
     @Override

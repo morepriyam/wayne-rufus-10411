@@ -1,5 +1,6 @@
 package frc.robot.commands;
 
+import java.util.Set;
 import java.util.function.DoubleSupplier;
 
 import edu.wpi.first.wpilibj2.command.Command;
@@ -82,9 +83,16 @@ public final class SubsystemCommands {
     }
 
     public Command shootManually() {
-        return shooter.dashboardSpinUpCommand()
-            .andThen(feed())
-            .handleInterrupt(() -> shooter.stop());
+        // Keep shooter spinning at dashboard RPM throughout the entire feed sequence
+        // Begin feeding once shooter crosses 3500 RPM threshold
+        return Commands.defer(() -> {
+            final double rpm = shooter.getDashboardTargetRPM();
+            return Commands.parallel(
+                shooter.run(() -> shooter.setRPM(rpm)),
+                Commands.waitUntil(shooter::isAboveFeedThreshold)
+                    .andThen(feed())
+            );
+        }, Set.of(shooter, floor, feeder, intake));
     }
 
     private Command feed() {
