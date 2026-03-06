@@ -96,12 +96,18 @@ public class RobotContainer {
             .onTrue(intake.homingCommand())
             .onTrue(hanger.homingCommand());
 
+        // Right Trigger: Aim at hub using limelight + drive, then spin up shooter and feed when ready
         driver.rightTrigger().whileTrue(subsystemCommands.aimAndShoot());
+        // Right Bumper: Spin up shooter to dashboard-configured RPM, then feed
         driver.rightBumper().whileTrue(subsystemCommands.shootManually());
+        // Left Trigger: Deploy intake and run rollers to pick up a note
         driver.leftTrigger().whileTrue(intake.intakeCommand());
+        // Left Bumper: Stow the intake pivot
         driver.leftBumper().onTrue(intake.runOnce(() -> intake.set(Intake.Position.STOWED)));
 
+        // D-Pad Up: Move hanger to pre-hang (raised) position
         driver.povUp().onTrue(hanger.positionCommand(Hanger.Position.HANGING));
+        // D-Pad Down: Pull hanger down to hung (climbed) position
         driver.povDown().onTrue(hanger.positionCommand(Hanger.Position.HUNG));
     }
 
@@ -113,10 +119,15 @@ public class RobotContainer {
             () -> -driver.getRightX()
         );
         swerve.setDefaultCommand(manualDriveCommand);
+        // A: Lock heading toward opponent alliance wall (180°)
         driver.a().onTrue(Commands.runOnce(() -> manualDriveCommand.setLockedHeading(Rotation2d.k180deg)));
+        // B: Lock heading to the right (90° clockwise)
         driver.b().onTrue(Commands.runOnce(() -> manualDriveCommand.setLockedHeading(Rotation2d.kCW_90deg)));
+        // X: Lock heading to the left (90° counter-clockwise)
         driver.x().onTrue(Commands.runOnce(() -> manualDriveCommand.setLockedHeading(Rotation2d.kCCW_90deg)));
+        // Y: Lock heading toward own alliance wall (0°)
         driver.y().onTrue(Commands.runOnce(() -> manualDriveCommand.setLockedHeading(Rotation2d.kZero)));
+        // Back (Select): Re-zero field-centric heading to current robot orientation
         driver.back().onTrue(Commands.runOnce(() -> manualDriveCommand.seedFieldCentric()));
     }
 
