@@ -155,9 +155,13 @@ public class Shooter extends SubsystemBase {
 
     @Override
     public void periodic() {
+        Logger.recordOutput("Shooter/ActiveCommand", getCurrentCommand() != null ? getCurrentCommand().getName() : "none");
         Logger.recordOutput("Shooter/Left/RPM", leftMotor.getVelocity().getValue().in(RPM));
         Logger.recordOutput("Shooter/Middle/RPM", middleMotor.getVelocity().getValue().in(RPM));
         Logger.recordOutput("Shooter/Right/RPM", rightMotor.getVelocity().getValue().in(RPM));
+        Logger.recordOutput("Shooter/Left/MotorVoltage", leftMotor.getMotorVoltage().getValue().in(Volts));
+        Logger.recordOutput("Shooter/Middle/MotorVoltage", middleMotor.getMotorVoltage().getValue().in(Volts));
+        Logger.recordOutput("Shooter/Right/MotorVoltage", rightMotor.getMotorVoltage().getValue().in(Volts));
         Logger.recordOutput("Shooter/Left/SupplyVoltage", leftMotor.getSupplyVoltage().getValue().in(Volts));
         Logger.recordOutput("Shooter/Middle/SupplyVoltage", middleMotor.getSupplyVoltage().getValue().in(Volts));
         Logger.recordOutput("Shooter/Right/SupplyVoltage", rightMotor.getSupplyVoltage().getValue().in(Volts));

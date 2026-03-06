@@ -146,7 +146,9 @@ public class Hanger extends SubsystemBase {
 
     @Override
     public void periodic() {
+        Logger.recordOutput("Hanger/ActiveCommand", getCurrentCommand() != null ? getCurrentCommand().getName() : "none");
         Logger.recordOutput("Hanger/ExtensionInches", motorAngleToExtension(motor.getPosition().getValue()).in(Inches));
+        Logger.recordOutput("Hanger/MotorVoltage", motor.getMotorVoltage().getValue().in(Volts));
         Logger.recordOutput("Hanger/SupplyCurrent", motor.getSupplyCurrent().getValue().in(Amps));
         Logger.recordOutput("Hanger/IsHomed", isHomed);
     }

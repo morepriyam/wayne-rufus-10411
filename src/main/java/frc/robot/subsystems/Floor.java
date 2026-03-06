@@ -79,7 +79,9 @@ public class Floor extends SubsystemBase {
 
     @Override
     public void periodic() {
+        Logger.recordOutput("Floor/ActiveCommand", getCurrentCommand() != null ? getCurrentCommand().getName() : "none");
         Logger.recordOutput("Floor/RPM", motor.getVelocity().getValue().in(RPM));
+        Logger.recordOutput("Floor/MotorVoltage", motor.getMotorVoltage().getValue().in(Volts));
         Logger.recordOutput("Floor/StatorCurrent", motor.getStatorCurrent().getValue().in(Amps));
         Logger.recordOutput("Floor/SupplyCurrent", motor.getSupplyCurrent().getValue().in(Amps));
     }
