@@ -29,4 +29,11 @@ public final class Constants {
     public static class KrakenX60 {
         public static final AngularVelocity kFreeSpeed = RPM.of(6000);
     }
+
+    public static class Vision {
+        /** AprilTag localization pipeline (default). */
+        public static final int PIPELINE_APRILTAG = 0;
+        /** Neural Detector pipeline for fuel game pieces. */
+        public static final int PIPELINE_FUEL_DETECTOR = 1;
+    }
 }

@@ -27,6 +27,15 @@ public class Limelight extends SubsystemBase {
         this.posePublisher = telemetryTable.getStructTopic("Estimated Robot Pose", Pose2d.struct).publish();
     }
 
+    public String getName() {
+        return name;
+    }
+
+    /** Switches the active Limelight pipeline. Pipeline 0 = AprilTag, 1 = Fuel Detector. */
+    public void setPipeline(int index) {
+        LimelightHelpers.setPipelineIndex(name, index);
+    }
+
     public Optional<Measurement> getMeasurement(Pose2d currentRobotPose) {
         LimelightHelpers.SetRobotOrientation(name, currentRobotPose.getRotation().getDegrees(), 0, 0, 0, 0, 0);
 

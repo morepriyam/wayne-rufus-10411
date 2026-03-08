@@ -17,6 +17,7 @@ import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.Driving;
 import frc.robot.commands.AutoRoutines;
+import frc.robot.commands.FuelChaseCommand;
 import frc.robot.commands.ManualDriveCommand;
 import frc.robot.commands.SubsystemCommands;
 import frc.robot.subsystems.Feeder;
@@ -115,6 +116,9 @@ public class RobotContainer {
         driver.povDown().onTrue(hanger.positionCommand(Hanger.Position.HUNG));
         // D-Pad Left: Reverse floor and shooter to clear a jam
         driver.povLeft().whileTrue(Commands.parallel(floor.reverseCommand(), shooter.reverseCommand()));
+
+        // Start: Chase visible fuel using Limelight Neural Detector + run intake
+        driver.start().whileTrue(new FuelChaseCommand(swerve, limelight, intake));
     }
 
     private void configureManualDriveBindings() {

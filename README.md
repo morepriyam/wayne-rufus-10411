@@ -37,6 +37,7 @@ The project is based on one of CTRE's [Phoenix 6 example projects](https://githu
 |---|---|
 | Left Trigger | Deploy intake pivot and run rollers (hold to intake) |
 | Left Bumper | Stow intake pivot |
+| Start | Chase visible fuel — steer toward largest fuel cluster using Limelight + run intake (hold) |
 
 ### Climbing
 | Input | Action |
@@ -67,7 +68,60 @@ Complete these steps **at every new event** (and after any camera or robot mecha
    - **If the event specifies AndyMark field parts:** `2026-rebuilt-andymark.json`
 5. Confirm the active pipeline is set to **AprilTag** mode.
 
-### 2. Verify Camera Pose (Robot-to-Camera Transform)
+### 2. Set Up the Fuel Detector Pipeline
+
+> Do this **once** (new camera, new season, or reflash). Not required before every event.
+
+The robot uses two Limelight pipelines:
+
+| Pipeline index | Type | Purpose |
+|---|---|---|
+| **0** | AprilTag | Field-relative pose estimation (localization) |
+| **1** | Neural Detector | Fuel game-piece detection for the Start-button chase command |
+
+#### 2a. Update Limelight OS to 2026.0+
+
+The 2026 Hailo model flow requires **Limelight OS 2026.0 or newer**. Check the firmware version in the web UI under **Settings → System**. If it is older, download the latest image from the [Limelight downloads page](https://docs.limelightvision.io/docs/resources/downloads) and reflash.
+
+#### 2b. Download the Fuel model and labels
+
+From the [Limelight downloads page](https://docs.limelightvision.io/docs/resources/downloads), download:
+
+- **Fuel B1 Model — HAILO 8 MONOCHROME** (or **HAILO 8L MONOCHROME** — match the accelerator in your unit)
+- **Fuel Labels**
+
+#### 2c. Create pipeline 1 as a Neural Detector
+
+1. In the Limelight web UI, click **+** to add a new pipeline (or select slot 1 if it already exists).
+2. Set **Pipeline Type** to **Neural Detector**.
+3. Upload the model file and the labels file you downloaded.
+4. Set the **Runtime** to **Hailo 8** or **Hailo 8L** to match your hardware.
+5. Set **Confidence Threshold** to **0.55** as a starting point (lower finds more pieces; higher reduces false positives).
+
+#### 2d. Set a crop window
+
+Crop out regions that can never contain fuel to reduce false positives and improve speed:
+- Bottom of frame: your own bumper/intake
+- Top of frame: ceiling, bleachers, alliance wall
+
+Drag the crop handles in the Neural Detector pipeline editor to exclude these areas.
+
+#### 2e. Verify the pipeline index
+
+With the robot running, confirm in the web UI that:
+- **Pipeline 0** is your AprilTag pipeline (the robot uses this by default and returns to it after chasing).
+- **Pipeline 1** is the Neural Detector / Fuel pipeline.
+
+Robot code switches between them automatically — pipeline 0 is active at all times except while the driver holds **Start**.
+
+#### 2f. Camera exposure for moving game pieces
+
+In the Neural Detector pipeline camera settings:
+- Use **low exposure** to reduce motion blur on rolling fuel.
+- Raise **gain** just enough to keep detections stable in the venue lighting.
+- You are not trying to produce a clear video — stable detections during robot motion are the goal.
+
+### 3. Verify Camera Pose (Robot-to-Camera Transform)
 
 The Limelight needs to know where it is mounted on the robot to produce accurate field-relative pose estimates.
 
@@ -79,7 +133,7 @@ The Limelight needs to know where it is mounted on the robot to produce accurate
    - **Roll / Pitch / Yaw:** camera tilt angles (degrees)
 3. Measure these from the robot physically if they haven't been set — they must match the actual mount.
 
-### 3. Re-Zero Field-Centric Orientation Before Each Match
+### 4. Re-Zero Field-Centric Orientation Before Each Match
 
 At the start of every match (robot placed on the field):
 
@@ -88,7 +142,7 @@ At the start of every match (robot placed on the field):
 
 > The robot uses field-centric driving relative to this zero, so this must match how the robot is physically placed.
 
-### 4. Verify Vision Is Working (Pre-Match Check)
+### 5. Verify Vision Is Working (Pre-Match Check)
 
 1. Open **Shuffleboard** or **AdvantageScope** while connected to the robot.
 2. Confirm vision data is updating:
@@ -99,7 +153,7 @@ At the start of every match (robot placed on the field):
    - Re-confirm the field map was uploaded and the correct pipeline is active.
    - Check that the camera pose offset is configured correctly.
 
-### 5. Shooter Tuning (If Needed)
+### 6. Shooter Tuning (If Needed)
 
 - The target shooter RPM for manual shots (Right Bumper) is set via **Shuffleboard** — look for the `Target RPM` slider under the Shooter subsystem widget.
 - Default is **5000 RPM**. Adjust based on shot distance for the event venue.
