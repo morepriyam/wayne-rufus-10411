@@ -13,6 +13,8 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
+import org.littletonrobotics.junction.Logger;
+
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d;
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -107,5 +109,12 @@ public class SwerveTelemetry {
             m_moduleDirections[i].setAngle(state.ModuleStates[i].angle);
             m_moduleSpeeds[i].setLength(state.ModuleStates[i].speedMetersPerSecond / (2 * MaxSpeed));
         }
+
+        /* Mirror swerve state into AdvantageKit logs so .wpilog captures drive behavior */
+        Logger.recordOutput("Swerve/Pose", state.Pose);
+        Logger.recordOutput("Swerve/Speeds", state.Speeds);
+        Logger.recordOutput("Swerve/ModuleStates", state.ModuleStates);
+        Logger.recordOutput("Swerve/ModuleTargets", state.ModuleTargets);
+        Logger.recordOutput("Swerve/OdometryFrequency", 1.0 / state.OdometryPeriod);
     }
 }

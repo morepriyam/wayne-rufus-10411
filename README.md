@@ -91,7 +91,9 @@ At the start of every match (robot placed on the field):
 ### 4. Verify Vision Is Working (Pre-Match Check)
 
 1. Open **Shuffleboard** or **AdvantageScope** while connected to the robot.
-2. Confirm the **"Estimated Robot Pose"** value under `SmartDashboard/limelight` is updating and makes sense given the robot's position on the field.
+2. Confirm vision data is updating:
+   - **Shuffleboard:** check `SmartDashboard/limelight/Estimated Robot Pose`
+   - **AdvantageScope (live or from log):** check `/AdvantageKit/Limelight/EstimatedPose` and `/AdvantageKit/Limelight/MeasurementAccepted`
 3. If the pose is wildly wrong or not updating:
    - Check that the Limelight has a tag in view (run a test with tags visible).
    - Re-confirm the field map was uploaded and the correct pipeline is active.
@@ -179,7 +181,11 @@ The [`Limelight`](src/main/java/frc/robot/subsystems/Limelight.java) subsystem r
 | MegaTag2 | X / Y translation | More position-stable; uses IMU heading to resolve tag ambiguity |
 | MegaTag1 | Rotation (heading) | Helps counteract IMU drift over a match |
 
-The combined pose is published to `SmartDashboard/limelight/Estimated Robot Pose` every cycle for diagnostics in Shuffleboard or AdvantageScope.
+The combined pose is published in two places every cycle:
+- `SmartDashboard/limelight/Estimated Robot Pose` — for Shuffleboard diagnostics
+- `/AdvantageKit/Limelight/EstimatedPose` — in the `.wpilog` for post-match replay in AdvantageScope
+
+Additional signals logged to `/AdvantageKit/Limelight/`: `TagCount`, `LatencyMs`, `AvgTagDistMeters`, `MeasurementAccepted` (false when no tags visible).
 
 Standard deviations passed with each vision measurement are `[0.1 m, 0.1 m, 10.0 rad]` — the filter trusts X/Y position strongly but is skeptical of heading from vision, since the gyro is generally more reliable for rotation.
 
@@ -197,7 +203,7 @@ The filter automatically weights odometry vs. vision based on the respective sta
 
 - **Auto-aim ([`AimAndDriveCommand`](src/main/java/frc/robot/commands/AimAndDriveCommand.java)):** Computes the direction from `swerve.getState().Pose` to `Landmarks.hubPosition()` and rotates the robot to point its shooter at the hub.
 - **Autonomous ([`AutoRoutines`](src/main/java/frc/robot/commands/AutoRoutines.java)):** Choreo path following uses the fused pose to run PID corrections in [`Swerve.followPath()`](src/main/java/frc/robot/subsystems/Swerve.java#L98), keeping the robot on the planned trajectory.
-- **Diagnostics:** The live estimated pose is visible in AdvantageScope and Shuffleboard whenever the Limelight has tags in view.
+- **Diagnostics:** The live estimated pose and all subsystem state is visible in AdvantageScope at `/AdvantageKit/…` whenever connected to the robot or when replaying a `.wpilog` log file. Swerve pose (`Swerve/Pose`) and vision (`Limelight/EstimatedPose`) are both captured in the log for full post-match replay.
 
 ```mermaid
 flowchart TD

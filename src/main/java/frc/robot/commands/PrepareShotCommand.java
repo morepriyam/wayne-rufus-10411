@@ -5,6 +5,8 @@ import static edu.wpi.first.units.Units.Meters;
 
 import java.util.function.Supplier;
 
+import org.littletonrobotics.junction.Logger;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.interpolation.InterpolatingTreeMap;
@@ -65,6 +67,10 @@ public class PrepareShotCommand extends Command {
         shooter.setRPM(shot.shooterRPM);
         hood.setPosition(shot.hoodPosition);
         SmartDashboard.putNumber("Distance to Hub (inches)", distanceToHub.in(Inches));
+        Logger.recordOutput("PrepareShotCommand/DistanceToHubInches", distanceToHub.in(Inches));
+        Logger.recordOutput("PrepareShotCommand/TargetRPM", shot.shooterRPM);
+        Logger.recordOutput("PrepareShotCommand/TargetHoodPosition", shot.hoodPosition);
+        Logger.recordOutput("PrepareShotCommand/IsReadyToShoot", isReadyToShoot());
     }
 
     @Override

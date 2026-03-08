@@ -94,7 +94,9 @@ public class Feeder extends SubsystemBase {
     public void periodic() {
         Logger.recordOutput("Feeder/ActiveCommand", getCurrentCommand() != null ? getCurrentCommand().getName() : "none");
         Logger.recordOutput("Feeder/RPM", motor.getVelocity().getValue().in(RPM));
+        Logger.recordOutput("Feeder/TargetRPM", velocityRequest.getVelocityMeasure().in(RPM));
         Logger.recordOutput("Feeder/MotorVoltage", motor.getMotorVoltage().getValue().in(Volts));
+        Logger.recordOutput("Feeder/SupplyVoltage", motor.getSupplyVoltage().getValue().in(Volts));
         Logger.recordOutput("Feeder/StatorCurrent", motor.getStatorCurrent().getValue().in(Amps));
         Logger.recordOutput("Feeder/SupplyCurrent", motor.getSupplyCurrent().getValue().in(Amps));
     }

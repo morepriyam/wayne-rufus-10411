@@ -9,6 +9,8 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.units.measure.Time;
+import org.littletonrobotics.junction.Logger;
+
 import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.wpilibj.Servo;
 import edu.wpi.first.wpilibj.Timer;
@@ -79,6 +81,10 @@ public class Hood extends SubsystemBase {
     @Override
     public void periodic() {
         updateCurrentPosition();
+        Logger.recordOutput("Hood/ActiveCommand", getCurrentCommand() != null ? getCurrentCommand().getName() : "none");
+        Logger.recordOutput("Hood/CurrentPosition", currentPosition);
+        Logger.recordOutput("Hood/TargetPosition", targetPosition);
+        Logger.recordOutput("Hood/IsWithinTolerance", isPositionWithinTolerance());
     }
 
     @Override

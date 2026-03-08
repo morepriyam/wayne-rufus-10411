@@ -9,6 +9,8 @@ import com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.ctre.phoenix6.swerve.SwerveRequest.ForwardPerspectiveValue;
 
+import org.littletonrobotics.junction.Logger;
+
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.units.measure.Angle;
@@ -67,12 +69,19 @@ public class AimAndDriveCommand extends Command {
     @Override
     public void execute() {
         final ManualDriveInput input = inputSmoother.getSmoothedInput();
+        final Rotation2d targetDirection = getDirectionToHub();
         swerve.setControl(
             fieldCentricFacingAngleRequest
                 .withVelocityX(Driving.kMaxSpeed.times(input.forward))
                 .withVelocityY(Driving.kMaxSpeed.times(input.left))
-                .withTargetDirection(getDirectionToHub())
+                .withTargetDirection(targetDirection)
         );
+        final Rotation2d currentHeading = swerve.getState().Pose.getRotation()
+            .rotateBy(swerve.getOperatorForwardDirection());
+        Logger.recordOutput("AimAndDrive/TargetHeadingDeg", targetDirection.getDegrees());
+        Logger.recordOutput("AimAndDrive/CurrentHeadingDeg", currentHeading.getDegrees());
+        Logger.recordOutput("AimAndDrive/HeadingErrorDeg", targetDirection.minus(currentHeading).getDegrees());
+        Logger.recordOutput("AimAndDrive/IsAimed", isAimed());
     }
 
     @Override

@@ -215,10 +215,14 @@ public class Intake extends SubsystemBase {
     public void periodic() {
         Logger.recordOutput("Intake/ActiveCommand", getCurrentCommand() != null ? getCurrentCommand().getName() : "none");
         Logger.recordOutput("Intake/PivotAngleDegrees", pivotMotor.getPosition().getValue().in(Degrees));
+        Logger.recordOutput("Intake/PivotTargetDegrees", pivotMotionMagicRequest.getPositionMeasure().in(Degrees));
+        Logger.recordOutput("Intake/PivotVelocityRPM", pivotMotor.getVelocity().getValue().in(RPM));
         Logger.recordOutput("Intake/RollerRPM", rollerMotor.getVelocity().getValue().in(RPM));
         Logger.recordOutput("Intake/PivotMotorVoltage", pivotMotor.getMotorVoltage().getValue().in(Volts));
         Logger.recordOutput("Intake/RollerMotorVoltage", rollerMotor.getMotorVoltage().getValue().in(Volts));
+        Logger.recordOutput("Intake/PivotStatorCurrent", pivotMotor.getStatorCurrent().getValue().in(Amps));
         Logger.recordOutput("Intake/PivotSupplyCurrent", pivotMotor.getSupplyCurrent().getValue().in(Amps));
+        Logger.recordOutput("Intake/RollerStatorCurrent", rollerMotor.getStatorCurrent().getValue().in(Amps));
         Logger.recordOutput("Intake/RollerSupplyCurrent", rollerMotor.getSupplyCurrent().getValue().in(Amps));
         Logger.recordOutput("Intake/IsHomed", isHomed);
     }

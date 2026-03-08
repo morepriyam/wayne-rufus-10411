@@ -7,6 +7,8 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import org.littletonrobotics.junction.Logger;
+
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
@@ -36,6 +38,7 @@ public class Limelight extends SubsystemBase {
                 || poseEstimate_MegaTag1.tagCount == 0
                 || poseEstimate_MegaTag2.tagCount == 0
         ) {
+            Logger.recordOutput("Limelight/MeasurementAccepted", false);
             return Optional.empty();
         }
 
@@ -49,6 +52,13 @@ public class Limelight extends SubsystemBase {
         final Matrix<N3, N1> standardDeviations = VecBuilder.fill(0.1, 0.1, 10.0);
 
         posePublisher.set(poseEstimate_MegaTag2.pose);
+
+        // Log vision data to AdvantageKit so it appears in .wpilog for replay
+        Logger.recordOutput("Limelight/EstimatedPose", poseEstimate_MegaTag2.pose);
+        Logger.recordOutput("Limelight/TagCount", (double) poseEstimate_MegaTag2.tagCount);
+        Logger.recordOutput("Limelight/LatencyMs", poseEstimate_MegaTag2.latency);
+        Logger.recordOutput("Limelight/AvgTagDistMeters", poseEstimate_MegaTag2.avgTagDist);
+        Logger.recordOutput("Limelight/MeasurementAccepted", true);
 
         return Optional.of(new Measurement(poseEstimate_MegaTag2, standardDeviations));
     }

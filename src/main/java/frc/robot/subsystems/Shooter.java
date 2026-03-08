@@ -168,6 +168,9 @@ public class Shooter extends SubsystemBase {
         Logger.recordOutput("Shooter/Left/StatorCurrent", leftMotor.getStatorCurrent().getValue().in(Amps));
         Logger.recordOutput("Shooter/Middle/StatorCurrent", middleMotor.getStatorCurrent().getValue().in(Amps));
         Logger.recordOutput("Shooter/Right/StatorCurrent", rightMotor.getStatorCurrent().getValue().in(Amps));
+        Logger.recordOutput("Shooter/Left/SupplyCurrent", leftMotor.getSupplyCurrent().getValue().in(Amps));
+        Logger.recordOutput("Shooter/Middle/SupplyCurrent", middleMotor.getSupplyCurrent().getValue().in(Amps));
+        Logger.recordOutput("Shooter/Right/SupplyCurrent", rightMotor.getSupplyCurrent().getValue().in(Amps));
         Logger.recordOutput("Shooter/TargetRPM", velocityRequest.getVelocityMeasure().in(RPM));
         Logger.recordOutput("Shooter/ReadyToShoot", isVelocityWithinTolerance());
         Logger.recordOutput("Shooter/AboveFeedThreshold", isAboveFeedThreshold());

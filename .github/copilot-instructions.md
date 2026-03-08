@@ -27,6 +27,23 @@ Java, WPILib 2026.1.1, CTRE Phoenix 6, ChoreoLib, AdvantageKit.
 - Retrieve after session: `sftp lvuser@10.104.11.2:/home/lvuser/logs/*.wpilog .`
 - Open in AdvantageScope for timeline analysis
 
+### What is logged (key AK paths)
+| Subsystem / Source | Key prefix | Notable signals |
+|---|---|---|
+| Swerve | `Swerve/` | Pose, Speeds, ModuleStates, ModuleTargets, OdometryFrequency |
+| Limelight | `Limelight/` | EstimatedPose, TagCount, LatencyMs, AvgTagDistMeters, MeasurementAccepted |
+| Shooter | `Shooter/` | Left/Middle/Right RPM + MotorVoltage + SupplyVoltage + StatorCurrent + SupplyCurrent, TargetRPM, ReadyToShoot, AboveFeedThreshold |
+| Feeder | `Feeder/` | RPM, TargetRPM, MotorVoltage, SupplyVoltage, StatorCurrent, SupplyCurrent |
+| Floor | `Floor/` | RPM, MotorVoltage, StatorCurrent, SupplyCurrent |
+| Intake | `Intake/` | PivotAngleDegrees, PivotTargetDegrees, PivotVelocityRPM, RollerRPM, motor voltages, stator + supply currents, IsHomed |
+| Hanger | `Hanger/` | ExtensionInches, TargetExtensionInches, IsWithinTolerance, MotorVoltage, StatorCurrent, SupplyCurrent, IsHomed |
+| Hood | `Hood/` | CurrentPosition, TargetPosition, IsWithinTolerance |
+| PrepareShotCommand | `PrepareShotCommand/` | DistanceToHubInches, TargetRPM, TargetHoodPosition, IsReadyToShoot |
+| AimAndDriveCommand | `AimAndDrive/` | TargetHeadingDeg, CurrentHeadingDeg, HeadingErrorDeg, IsAimed |
+| Robot | `Robot/` | BatteryVoltage, MatchTimeSec |
+
+> All paths appear under the `/AdvantageKit/` NT4 prefix live, and as top-level keys in `.wpilog` files.
+
 ## Key Conventions
 - All subsystems use `SmartDashboard.putData(this)` for Shuffleboard visibility
 - Hanger homing uses `kCancelSelf` — any position command will interrupt it
