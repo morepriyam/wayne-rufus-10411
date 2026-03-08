@@ -66,9 +66,18 @@ public final class AutoRoutines {
     }
 
     public void configure() {
+        autoChooser.addRoutine("Shoot Only", this::shootOnlyRoutine);
         autoChooser.addRoutine("Outpost and Depot", this::outpostAndDepotRoutine);
         SmartDashboard.putData("Auto Chooser", autoChooser);
         RobotModeTriggers.autonomous().whileTrue(autoChooser.selectedCommandScheduler());
+    }
+
+    private AutoRoutine shootOnlyRoutine() {
+        final AutoRoutine routine = autoFactory.newRoutine("Shoot Only");
+        routine.active().onTrue(
+            subsystemCommands.aimAndShoot().withTimeout(5)
+        );
+        return routine;
     }
 
     private AutoRoutine outpostAndDepotRoutine() {
