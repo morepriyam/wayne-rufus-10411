@@ -282,7 +282,30 @@ flowchart TD
 
 ## Autonomous Routines
 
-The active auto routine is selected on **Shuffleboard** before the match using the **Auto Chooser** widget. The robot runs the selected routine automatically when autonomous mode starts.
+The active auto routine is selected in **Elastic** before the match using the **Auto Chooser** widget. The robot runs the selected routine automatically when autonomous mode starts.
+
+### Setting Up the Auto Chooser Widget in Elastic
+
+> Do this once after first connecting to the robot with Elastic. The layout is saved and reloads automatically on future connections.
+
+1. **Connect** your laptop to the robot network and open **Elastic**.
+2. **Enable editing** — click the pencil / edit icon in Elastic's toolbar.
+3. **Add a new widget** — click **+** (Add Widget) or drag from the widget palette.
+4. Choose **ComboBox Chooser** (or **Split Button Chooser** if you prefer large buttons).
+5. Set the **NT Key** / source to:
+   ```
+   SmartDashboard/Auto Chooser
+   ```
+6. Give it a clear label such as **Auto Routine**.
+7. **Disable editing** and save the layout.
+
+The chooser will now show all registered routines as a dropdown. The selection takes effect immediately — no need to restart code. Always confirm the correct routine is selected **before autonomous starts**.
+
+> **If the widget shows "No options" or is blank:** the robot code is not running yet, or the robot is not connected. Enable the robot (or just power it on with code running) and the options will populate automatically.
+
+---
+
+### Available Routines
 
 | Routine | Starting Position | Description |
 |---|---|---|
