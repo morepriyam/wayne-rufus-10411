@@ -8,10 +8,8 @@ import static frc.robot.generated.ChoreoTraj.OutpostAndDepotTrajectory$0;
 import static frc.robot.generated.ChoreoTraj.OutpostAndDepotTrajectory$1;
 import static frc.robot.generated.ChoreoTraj.OutpostAndDepotTrajectory$2;
 import static frc.robot.generated.ChoreoTraj.OutpostAndDepotTrajectory$3;
-import static frc.robot.generated.ChoreoTraj.ShootAndClimbTrajectory_Left;
-import static frc.robot.generated.ChoreoTraj.ShootAndClimbTrajectory_Center;
-import static frc.robot.generated.ChoreoTraj.ShootAndClimbTrajectory_Right;
 import frc.robot.generated.ChoreoTraj;
+import frc.robot.generated.ShootAndClimbTraj;
 
 import choreo.auto.AutoChooser;
 import choreo.auto.AutoFactory;
@@ -87,9 +85,9 @@ public final class AutoRoutines {
         return routine;
     }
 
-    private AutoRoutine shootAndClimbRight()  { return shootAndClimbFromPosition(ShootAndClimbTrajectory_Right,  "Shoot and Climb — Right"); }
-    private AutoRoutine shootAndClimbCenter() { return shootAndClimbFromPosition(ShootAndClimbTrajectory_Center, "Shoot and Climb — Center"); }
-    private AutoRoutine shootAndClimbLeft()   { return shootAndClimbFromPosition(ShootAndClimbTrajectory_Left,   "Shoot and Climb — Left"); }
+    private AutoRoutine shootAndClimbRight()  { return shootAndClimbFromPosition(ShootAndClimbTraj.Right,  "Shoot and Climb — Right"); }
+    private AutoRoutine shootAndClimbCenter() { return shootAndClimbFromPosition(ShootAndClimbTraj.Center, "Shoot and Climb — Center"); }
+    private AutoRoutine shootAndClimbLeft()   { return shootAndClimbFromPosition(ShootAndClimbTraj.Left,   "Shoot and Climb — Left"); }
 
     /** Shared logic: shoot preloaded balls, then drive to tower and climb. */
     private AutoRoutine shootAndClimbFromPosition(ChoreoTraj trajDef, String name) {

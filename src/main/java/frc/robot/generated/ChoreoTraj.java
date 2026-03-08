@@ -64,28 +64,6 @@ public record ChoreoTraj(
         new Pose2d(0.94136, 3.56436, Rotation2d.fromRadians(3.14159))
     );
 
-    public static final ChoreoTraj ShootAndClimbTrajectory_Right = new ChoreoTraj(
-        "ShootAndClimbTrajectory_Right",
-        OptionalInt.empty(),
-        2.067,
-        new Pose2d(3.598, 0.640, Rotation2d.fromRadians(3.14159)),
-        new Pose2d(0.941, 3.564, Rotation2d.fromRadians(3.14159))
-    );
-    public static final ChoreoTraj ShootAndClimbTrajectory_Center = new ChoreoTraj(
-        "ShootAndClimbTrajectory_Center",
-        OptionalInt.empty(),
-        1.649,
-        new Pose2d(3.598, 4.036, Rotation2d.fromRadians(3.14159)),
-        new Pose2d(0.941, 3.564, Rotation2d.fromRadians(3.14159))
-    );
-    public static final ChoreoTraj ShootAndClimbTrajectory_Left = new ChoreoTraj(
-        "ShootAndClimbTrajectory_Left",
-        OptionalInt.empty(),
-        2.314,
-        new Pose2d(3.598, 7.432, Rotation2d.fromRadians(3.14159)),
-        new Pose2d(0.941, 3.564, Rotation2d.fromRadians(3.14159))
-    );
-
     /**
      * A map between trajectory names and their corresponding data.
      * This allows for trajectory data to be looked up with strings during runtime.
@@ -95,10 +73,7 @@ public record ChoreoTraj(
         Map.entry("OutpostAndDepotTrajectory$0", OutpostAndDepotTrajectory$0),
         Map.entry("OutpostAndDepotTrajectory$1", OutpostAndDepotTrajectory$1),
         Map.entry("OutpostAndDepotTrajectory$2", OutpostAndDepotTrajectory$2),
-        Map.entry("OutpostAndDepotTrajectory$3", OutpostAndDepotTrajectory$3),
-        Map.entry("ShootAndClimbTrajectory_Right", ShootAndClimbTrajectory_Right),
-        Map.entry("ShootAndClimbTrajectory_Center", ShootAndClimbTrajectory_Center),
-        Map.entry("ShootAndClimbTrajectory_Left", ShootAndClimbTrajectory_Left)
+        Map.entry("OutpostAndDepotTrajectory$3", OutpostAndDepotTrajectory$3)
     );
 
     /**
