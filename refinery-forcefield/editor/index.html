@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Force Field Editor — FRC 10411</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- ── Sidebar ─────────────────────────────────────────── -->
+    <div id="sidebar">
+        <h2>⚡ Force Field Editor</h2>
+
+        <div class="section">
+            <h3>Add Charge</h3>
+            <div class="btn-row">
+                <button id="btn-add-point" title="Click on field to place">● Point</button>
+                <button id="btn-add-line" title="Click-drag on field">━ Line</button>
+                <button id="btn-add-radial" title="Click on field to place">◎ Radial</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Field Elements</h3>
+            <div class="btn-row">
+                <button id="btn-add-walls" title="Add repulsive line charges along field perimeter">⬚ Walls</button>
+                <button id="btn-add-obstacles" title="Add known game obstacles for selected year" disabled>⊞ Obstacles</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Visualization</h3>
+            <div class="btn-row">
+                <button id="btn-arrows" class="active">Arrows</button>
+                <button id="btn-heatmap">Heatmap</button>
+                <button id="btn-none">None</button>
+            </div>
+            <div style="margin-top: 8px;">
+                <label style="font-size: 12px; color: #a6adc8;">
+                    <input type="checkbox" id="chk-robot-preview" checked> Robot preview on hover
+                </label>
+            </div>
+            <div class="gain-grid" style="margin-top: 6px;">
+                <label>Robot Width (m)</label>
+                <input type="number" id="robot-width" value="0.552" step="0.01" min="0.1" max="2.0">
+                <label>Robot Height (m)</label>
+                <input type="number" id="robot-height" value="0.514" step="0.01" min="0.1" max="2.0">
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Map Settings</h3>
+            <div class="gain-grid">
+                <label>Name</label>
+                <input type="text" id="map-name" value="Default Field">
+                <label>Force Gain</label>
+                <input type="number" id="gain-force" value="1.0" step="0.1" min="0">
+                <label>Torque Gain</label>
+                <input type="number" id="gain-torque" value="0.5" step="0.1" min="0">
+                <label>Max Velocity</label>
+                <input type="number" id="gain-max-vel" value="2.0" step="0.1" min="0">
+                <label>Max Torque</label>
+                <input type="number" id="gain-max-torque" value="1.5" step="0.1" min="0">
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Charges</h3>
+        </div>
+        <div id="charge-list"></div>
+
+        <div id="props-panel" style="display: none;">
+            <h3>Properties</h3>
+            <div class="prop-grid" id="props-grid"></div>
+        </div>
+
+        <div class="section">
+            <h3>File</h3>
+            <div class="btn-row">
+                <button id="btn-export">Export JSON</button>
+                <button id="btn-import">Import JSON</button>
+                <button id="btn-clear" class="danger">Clear All</button>
+                <button id="btn-reset" class="danger" title="Reset editor to defaults and clear saved state">Reset</button>
+            </div>
+            <input type="file" id="file-input" accept=".json" style="display: none;">
+        </div>
+    </div>
+
+    <!-- ── Canvas area ──────────────────────────────────────── -->
+    <div id="canvas-area">
+        <div id="toolbar">
+            <select id="field-select" title="Select FRC field year"></select>
+            <span id="field-info" style="font-size: 13px; color: #a6adc8;">
+                16.54m × 8.07m &nbsp; | &nbsp; Blue alliance origin (bottom-left)
+            </span>
+            <div class="spacer"></div>
+            <button id="btn-undo" title="Undo (Ctrl+Z)" disabled>↩ Undo</button>
+            <button id="btn-redo" title="Redo (Ctrl+Shift+Z)" disabled>↪ Redo</button>
+            <button id="btn-zoom-in" title="Zoom in">+</button>
+            <button id="btn-zoom-out" title="Zoom out">−</button>
+            <button id="btn-zoom-fit" title="Fit to window">Fit</button>
+        </div>
+        <div id="canvas-container">
+            <canvas id="field-canvas"></canvas>
+        </div>
+        <div id="status">
+            <span id="status-pos">Mouse: (0.00, 0.00) m</span>
+            <span id="status-charges">Charges: 0</span>
+            <span id="status-mode">Mode: Select</span>
+        </div>
+    </div>
+
+    <script src="editor.js"></script>
+</body>
+</html>

@@ -1,0 +1,202 @@
+/* ── Force Field Editor — Styles ────────────────────────────────── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #1e1e2e;
+    color: #cdd6f4;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* ── Sidebar ───────────────────────────────────────────────────── */
+#sidebar {
+    width: 320px;
+    min-width: 320px;
+    background: #181825;
+    border-right: 1px solid #313244;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+#sidebar h2 {
+    padding: 16px;
+    font-size: 18px;
+    border-bottom: 1px solid #313244;
+    color: #cba6f7;
+}
+
+.section {
+    padding: 12px 16px;
+    border-bottom: 1px solid #313244;
+}
+
+.section h3 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #a6adc8;
+    margin-bottom: 8px;
+}
+
+.btn-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+button {
+    background: #313244;
+    color: #cdd6f4;
+    border: 1px solid #45475a;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.15s;
+}
+button:hover { background: #45475a; }
+button.active { background: #cba6f7; color: #1e1e2e; border-color: #cba6f7; }
+button.danger { background: #f38ba8; color: #1e1e2e; border-color: #f38ba8; }
+
+/* ── Charge list ───────────────────────────────────────────────── */
+#charge-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.charge-item {
+    background: #313244;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.charge-item:hover { border-color: #585b70; }
+.charge-item.selected { border-color: #cba6f7; }
+.charge-item .type-badge {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+.charge-item .type-badge.point   { background: #89b4fa; color: #1e1e2e; }
+.charge-item .type-badge.line    { background: #f9e2af; color: #1e1e2e; }
+.charge-item .type-badge.radial  { background: #a6e3a1; color: #1e1e2e; }
+.charge-item .delete-btn {
+    background: none;
+    border: none;
+    color: #f38ba8;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0 4px;
+}
+
+/* ── Properties panel ──────────────────────────────────────────── */
+#props-panel {
+    padding: 12px 16px;
+    border-top: 1px solid #313244;
+}
+#props-panel h3 { margin-bottom: 8px; }
+
+.prop-grid {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    gap: 6px 8px;
+    align-items: center;
+}
+
+.prop-grid label {
+    font-size: 12px;
+    color: #a6adc8;
+}
+
+.prop-grid input, .prop-grid select {
+    background: #1e1e2e;
+    border: 1px solid #45475a;
+    color: #cdd6f4;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    width: 100%;
+}
+
+/* Gain controls */
+.gain-grid {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 6px 8px;
+    align-items: center;
+}
+.gain-grid label { font-size: 12px; color: #a6adc8; }
+.gain-grid input {
+    background: #1e1e2e;
+    border: 1px solid #45475a;
+    color: #cdd6f4;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+/* ── Canvas area ───────────────────────────────────────────────── */
+#canvas-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+#toolbar {
+    display: flex;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #181825;
+    border-bottom: 1px solid #313244;
+    align-items: center;
+}
+
+#toolbar .spacer { flex: 1; }
+
+#field-select {
+    background: #313244;
+    color: #cdd6f4;
+    border: 1px solid #45475a;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 600;
+}
+#field-select:hover { border-color: #cba6f7; }
+#field-select option { background: #1e1e2e; }
+
+#canvas-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+/* ── Status bar ────────────────────────────────────────────────── */
+#status {
+    padding: 4px 16px;
+    background: #181825;
+    border-top: 1px solid #313244;
+    font-size: 12px;
+    color: #a6adc8;
+    display: flex;
+    gap: 16px;
+}

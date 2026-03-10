@@ -1,0 +1,75 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+group = 'com.bionanomics.refinery'
+version = '0.1.0'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+    withSourcesJar()
+    withJavadocJar()
+}
+
+repositories {
+    mavenCentral()
+    maven { url = "https://frcmaven.wpi.edu/artifactory/release/" }
+}
+
+// WPILib version — keep in sync with the robot project's GradleRIO version
+def wpiVersion = '2026.1.1'
+
+dependencies {
+    // WPILib math types (Translation2d, Pose2d, etc.)
+    api "edu.wpi.first.wpimath:wpimath-java:${wpiVersion}"
+
+    // WPILib units (required by wpimath Translation2d constructor)
+    api "edu.wpi.first.wpiunits:wpiunits-java:${wpiVersion}"
+
+    // WPILib utilities (includes Jackson for JSON)
+    api "edu.wpi.first.wpiutil:wpiutil-java:${wpiVersion}"
+
+    // WPILib core (SmartDashboard, SendableChooser, Filesystem)
+    api "edu.wpi.first.wpilibj:wpilibj-java:${wpiVersion}"
+
+    // Jackson for JSON parsing (transitive via WPILib, but declared explicitly)
+    api 'com.fasterxml.jackson.core:jackson-databind:2.19.2'
+
+    // WPILib HAL (required transitively by wpilibj)
+    api "edu.wpi.first.hal:hal-java:${wpiVersion}"
+
+    // WPILib NetworkTables (required transitively)
+    api "edu.wpi.first.ntcore:ntcore-java:${wpiVersion}"
+
+    // cscore (required transitively)
+    api "edu.wpi.first.cscore:cscore-java:${wpiVersion}"
+
+    // Testing
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+            pom {
+                name = 'Refinery ForceField'
+                description = 'Potential-field driving assist for FRC swerve robots'
+                url = 'https://github.com/BioNanomics/refinery-forcefield'
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'https://opensource.org/licenses/MIT'
+                    }
+                }
+            }
+        }
+    }
+}
