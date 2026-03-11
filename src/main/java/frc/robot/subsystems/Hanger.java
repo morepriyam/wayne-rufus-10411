@@ -3,8 +3,6 @@ package frc.robot.subsystems;
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Rotations;
-import static edu.wpi.first.units.Units.RotationsPerSecond;
-import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Volts;
 
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
@@ -21,7 +19,6 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.units.AngleUnit;
 import edu.wpi.first.units.DistanceUnit;
 import edu.wpi.first.units.Measure;
-import edu.wpi.first.units.measure.AngularVelocity;
 import org.littletonrobotics.junction.Logger;
 
 import edu.wpi.first.units.measure.Angle;
@@ -60,10 +57,10 @@ public class Hanger extends SubsystemBase {
     /**
      * Motion Magic cruise velocity and acceleration for extension/retraction.
      * Kept low to avoid breaking the climber string (was previously full Kraken free speed).
-     * ~0.5 RPS ≈ 30 RPM; increase slightly if too slow in practice.
+     * CTRE API expects double: cruise in rps, acceleration in rps². 0.5 rps ≈ 30 RPM.
      */
-    private static final AngularVelocity kMotionMagicCruiseVelocity = RotationsPerSecond.of(0.5);
-    private static final AngularVelocity kMotionMagicAcceleration = RotationsPerSecond.of(0.5).per(Second);
+    private static final double kMotionMagicCruiseVelocityRPS = 0.5;
+    private static final double kMotionMagicAccelerationRPS2 = 0.5;
 
     private final TalonFX motor;
     private final MotionMagicVoltage motionMagicRequest = new MotionMagicVoltage(0).withSlot(0);
@@ -89,15 +86,15 @@ public class Hanger extends SubsystemBase {
             )
             .withMotionMagic(
                 new MotionMagicConfigs()
-                    .withMotionMagicCruiseVelocity(kMotionMagicCruiseVelocity)
-                    .withMotionMagicAcceleration(kMotionMagicAcceleration)
+                    .withMotionMagicCruiseVelocity(kMotionMagicCruiseVelocityRPS)
+                    .withMotionMagicAcceleration(kMotionMagicAccelerationRPS2)
             )
             .withSlot0(
                 new Slot0Configs()
                     .withKP(10)
                     .withKI(0)
                     .withKD(0)
-                    .withKV(12.0 / kMotionMagicCruiseVelocity.in(RotationsPerSecond))
+                    .withKV(12.0 / kMotionMagicCruiseVelocityRPS)
             );
 
         motor.getConfigurator().apply(config);
