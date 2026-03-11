@@ -21,6 +21,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.units.AngleUnit;
 import edu.wpi.first.units.DistanceUnit;
 import edu.wpi.first.units.Measure;
+import edu.wpi.first.units.measure.AngularVelocity;
 import org.littletonrobotics.junction.Logger;
 
 import edu.wpi.first.units.measure.Angle;
@@ -32,7 +33,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.Constants.KrakenX60;
 import frc.robot.Ports;
 
 public class Hanger extends SubsystemBase {
@@ -56,6 +56,14 @@ public class Hanger extends SubsystemBase {
 
     private static final Per<DistanceUnit, AngleUnit> kHangerExtensionPerMotorAngle = Inches.of(6).div(Rotations.of(142));
     private static final Distance kExtensionTolerance = Inches.of(1);
+
+    /**
+     * Motion Magic cruise velocity and acceleration for extension/retraction.
+     * Kept low to avoid breaking the climber string (was previously full Kraken free speed).
+     * ~0.5 RPS ≈ 30 RPM; increase slightly if too slow in practice.
+     */
+    private static final AngularVelocity kMotionMagicCruiseVelocity = RotationsPerSecond.of(0.5);
+    private static final AngularVelocity kMotionMagicAcceleration = RotationsPerSecond.of(0.5).per(Second);
 
     private final TalonFX motor;
     private final MotionMagicVoltage motionMagicRequest = new MotionMagicVoltage(0).withSlot(0);
@@ -81,15 +89,15 @@ public class Hanger extends SubsystemBase {
             )
             .withMotionMagic(
                 new MotionMagicConfigs()
-                    .withMotionMagicCruiseVelocity(KrakenX60.kFreeSpeed)
-                    .withMotionMagicAcceleration(KrakenX60.kFreeSpeed.per(Second))
+                    .withMotionMagicCruiseVelocity(kMotionMagicCruiseVelocity)
+                    .withMotionMagicAcceleration(kMotionMagicAcceleration)
             )
             .withSlot0(
                 new Slot0Configs()
                     .withKP(10)
                     .withKI(0)
                     .withKD(0)
-                    .withKV(12.0 / KrakenX60.kFreeSpeed.in(RotationsPerSecond)) // 12 volts when requesting max RPS
+                    .withKV(12.0 / kMotionMagicCruiseVelocity.in(RotationsPerSecond))
             );
 
         motor.getConfigurator().apply(config);
