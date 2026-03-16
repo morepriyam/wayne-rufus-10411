@@ -18,6 +18,8 @@ import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.networktables.GenericEntry;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 
 /**
  * The methods in this class are called automatically corresponding to each
@@ -28,7 +30,8 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
  */
 public class Robot extends LoggedRobot {
     private final RobotContainer m_robotContainer;
-
+private final GenericEntry m_mcpEnabled;
+    private boolean m_mcpWasEnabled = false;
     /**
      * This function is run when the robot is first started up and should be used
      * for any
@@ -56,6 +59,13 @@ public class Robot extends LoggedRobot {
         }
         Logger.addDataReceiver(new NT4Publisher()); // Live data in AdvantageScope
         Logger.start();
+
+        // MCP server toggle — enable/disable from Shuffleboard at runtime
+        // See MCP.md for VS Code and Claude Desktop setup instructions
+        m_mcpEnabled = Shuffleboard.getTab("Robot")
+            .add("MCP Server", true)
+            .withSize(1, 1)
+            .getEntry();
     }
 
     /**
@@ -81,6 +91,15 @@ public class Robot extends LoggedRobot {
         Logger.recordOutput("Robot/BatteryVoltage", RobotController.getBatteryVoltage());
         Logger.recordOutput("Robot/MatchTimeSec", DriverStation.getMatchTime());
         m_robotContainer.updateForceFieldConfig();
+
+        // MCP server runtime toggle
+        boolean mcpEnabled = m_mcpEnabled.getBoolean(true);
+        if (mcpEnabled && !m_mcpWasEnabled) {
+            RoboRioMcpServer.start();
+        } else if (!mcpEnabled && m_mcpWasEnabled) {
+            RoboRioMcpServer.stop();
+        }
+        m_mcpWasEnabled = mcpEnabled;
     }
 
     /**

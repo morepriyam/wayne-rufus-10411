@@ -61,7 +61,7 @@ dependencies {
     // Refinery ForceField library (composite build)
     implementation 'com.bionanomics.refinery:refinery-forcefield'
 
-    // Refinery roboRIO MCP server (composite build)
+// Refinery RoboRIO MCP server (composite build)
     implementation 'com.bionanomics.refinery:refinery-roborio-mcp'
 
     roborioDebug wpi.java.deps.wpilibJniDebug(wpi.platforms.roborio)

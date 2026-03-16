@@ -89,6 +89,14 @@ The subtree files are already committed in the repo — no submodule init requir
 
 ---
 
+## MCP Server (AI Assistant Integration)
+
+The robot includes an embedded MCP server that exposes read-only robot state (battery, match info, CAN bus health, NetworkTables) to AI assistants like GitHub Copilot and Claude. It is **on by default** and can be toggled off from the **"MCP Server"** switch on the Shuffleboard **Robot** tab.
+
+See [MCP.md](MCP.md) for full setup instructions (VS Code, Claude Desktop, curl testing, available tools).
+
+---
+
 ## Field Setup & Match Calibration
 
 Complete these steps **at every new event** (and after any camera or robot mechanical changes) before going on the field.
@@ -219,6 +227,7 @@ These happen immediately when the robot code launches, before any mode is active
 | Subsystems initialized | All subsystems (Swerve, Intake, Floor, Feeder, Shooter, Hood, Hanger, Limelight) are instantiated and their motors configured |
 | Vision update begins | Limelight default command starts running immediately, even while disabled (`ignoringDisable = true`) |
 | Shooter default command | Shooter default is `stop()` — motors hold at zero until commanded |
+| MCP server toggle | A Shuffleboard boolean on the Robot tab; on by default. See [MCP.md](MCP.md) |
 
 ### 2. On First Enable (Teleop or Autonomous — not Test Mode)
 
