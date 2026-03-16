@@ -371,6 +371,8 @@ The chooser will now show all registered routines as a dropdown. The selection t
 | Routine | Starting Position | Description |
 |---|---|---|
 | **Shoot Only** | Any | Aims at the hub and shoots preloaded balls (5 s timeout). No driving — safe fallback for any starting spot. |
+| **Back Up Left and Shoot** | Left (north) zone | Starts from left; backs up at an angle (Choreo path), then aims and shoots. Requires Choreo trajectory — see below. |
+| **Back Up Right and Shoot** | Right (south) zone | Starts from right; backs up at an angle (Choreo path), then aims and shoots. Requires Choreo trajectory — see below. |
 | **Shoot and Climb — Right** | Right (south) zone | Shoots preloaded balls, then drives to the tower and climbs. |
 | **Shoot and Climb — Center** | Center zone | Shoots preloaded balls, then drives to the tower and climbs. |
 | **Shoot and Climb — Left** | Left (north) zone | Shoots preloaded balls, then drives to the tower and climbs. |
@@ -397,6 +399,17 @@ Auto-aim also works correctly on Red: [`Landmarks.hubPosition()`](src/main/java/
 5. On arrival at the tower, hanger pulls down to fully climbed position (`HUNG`).
 
 > The trajectory file for this path is [`ShootAndClimbTrajectory.traj`](src/main/deploy/choreo/ShootAndClimbTrajectory.traj). It was generated as a straight-line trapezoidal profile. **If there are field obstacles on the diagonal path, open it in Choreo, re-solve, and save — the robot code will automatically use the updated path on next deploy.**
+
+### Back Up Left / Back Up Right and Shoot — Choreo setup
+
+These routines start from the **left** or **right** zone (same as Shoot and Climb), **back up at an angle**, and **end with the robot tilted so the shooter faces the hub**. Create the two trajectories in Choreo once:
+
+1. Open **Choreo** and load `src/main/deploy/choreo/ChoreoProject.chor`.
+2. **Back Up Left:** New Trajectory, name **`BackUpLeftTrajectory`**. **Start from left zone:** (3.598 m, 7.432 m, 180°). **End:** (2.1 m, 6.8 m) with **heading so the shooter (back) points at the hub** — set end waypoint heading to point the back of the robot at the speaker (~130°). Generate, then Save.
+3. **Back Up Right:** New Trajectory, name **`BackUpRightTrajectory`**. **Start from right zone:** (3.598 m, 0.640 m, 180°). **End:** (2.1 m, 1.2 m) with **heading tilted toward the hub** (~227°). Generate and Save.
+4. Ensure the `.traj` files are in `src/main/deploy/choreo/`, then build and deploy.
+
+[`BackUpAndShootTraj.java`](src/main/java/frc/robot/generated/BackUpAndShootTraj.java) uses the same left/right start poses as Shoot and Climb and computes end headings so the path finishes aimed at the speaker; you can tweak end (x, y) or duration there.
 
 ### Adding or Editing a Routine
 
