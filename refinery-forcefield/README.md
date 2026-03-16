@@ -294,6 +294,10 @@ cd editor && python3 -m http.server 8765
 
 Then open [http://localhost:8765](http://localhost:8765).
 
+| Force Lines | Heatmap |
+|:-----------:|:-------:|
+| ![Force lines visualization](screenshots/field-forcelines.png) | ![Heatmap visualization](screenshots/field-heatmap.png) |
+
 Features:
 - Drag-and-drop placement of point, line, and radial charges
 - Real-time force arrow and heatmap visualization
