@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Force Field Editor — FRC 10411</title>
     <link rel="stylesheet" href="style.css">
+    <script>
+    function toggleSection(h3) {
+        var body = h3.nextElementSibling;
+        var arrow = h3.querySelector('.toggle-arrow');
+        if (body.style.display === 'none') {
+            body.style.display = '';
+            arrow.style.transform = '';
+            h3.style.marginBottom = '';
+        } else {
+            body.style.display = 'none';
+            arrow.style.transform = 'rotate(-90deg)';
+            h3.style.marginBottom = '0';
+        }
+    }
+    </script>
 </head>
 <body>
     <!-- ── Sidebar ─────────────────────────────────────────── -->
@@ -12,77 +27,89 @@
         <h2>⚡ Force Field Editor</h2>
 
         <div class="section">
-            <h3>Add Charge</h3>
-            <div class="btn-row">
-                <button id="btn-add-point" title="Click on field to place">● Point</button>
-                <button id="btn-add-line" title="Click-drag on field">━ Line</button>
-                <button id="btn-add-radial" title="Click on field to place">◎ Radial</button>
+            <h3 onclick="toggleSection(this)"><span class="toggle-arrow">&#x25bc;</span> Add Charge</h3>
+            <div class="section-body">
+                <div class="btn-row">
+                    <button id="btn-add-point" title="Click on field to place">● Point</button>
+                    <button id="btn-add-line" title="Click-drag on field">━ Line</button>
+                    <button id="btn-add-radial" title="Click on field to place">◎ Radial</button>
+                </div>
             </div>
         </div>
 
         <div class="section">
-            <h3>Field Elements</h3>
-            <div class="btn-row">
-                <button id="btn-add-walls" title="Add repulsive line charges along field perimeter">⬚ Walls</button>
-                <button id="btn-add-obstacles" title="Add known game obstacles for selected year" disabled>⊞ Obstacles</button>
+            <h3 onclick="toggleSection(this)"><span class="toggle-arrow">&#x25bc;</span> Field Elements</h3>
+            <div class="section-body">
+                <div class="btn-row">
+                    <button id="btn-add-walls" title="Add repulsive line charges along field perimeter">⬚ Walls</button>
+                    <button id="btn-add-obstacles" title="Add known game obstacles for selected year" disabled>⊞ Obstacles</button>
+                </div>
             </div>
         </div>
 
         <div class="section">
-            <h3>Visualization</h3>
-            <div class="btn-row">
-                <button id="btn-arrows" class="active">Arrows</button>
-                <button id="btn-heatmap">Heatmap</button>
-                <button id="btn-none">None</button>
-            </div>
-            <div style="margin-top: 8px;">
-                <label style="font-size: 12px; color: #a6adc8;">
-                    <input type="checkbox" id="chk-robot-preview" checked> Robot preview on hover
-                </label>
-            </div>
-            <div class="gain-grid" style="margin-top: 6px;">
-                <label>Robot Width (m)</label>
-                <input type="number" id="robot-width" value="0.552" step="0.01" min="0.1" max="2.0">
-                <label>Robot Height (m)</label>
-                <input type="number" id="robot-height" value="0.514" step="0.01" min="0.1" max="2.0">
-            </div>
-        </div>
-
-        <div class="section">
-            <h3>Map Settings</h3>
-            <div class="gain-grid">
-                <label>Name</label>
-                <input type="text" id="map-name" value="Default Field">
-                <label>Force Gain</label>
-                <input type="number" id="gain-force" value="1.0" step="0.1" min="0">
-                <label>Torque Gain</label>
-                <input type="number" id="gain-torque" value="0.5" step="0.1" min="0">
-                <label>Max Velocity</label>
-                <input type="number" id="gain-max-vel" value="2.0" step="0.1" min="0">
-                <label>Max Torque</label>
-                <input type="number" id="gain-max-torque" value="1.5" step="0.1" min="0">
+            <h3 onclick="toggleSection(this)"><span class="toggle-arrow">&#x25bc;</span> Visualization</h3>
+            <div class="section-body">
+                <div class="btn-row">
+                    <button id="btn-arrows" class="active">Arrows</button>
+                    <button id="btn-heatmap">Heatmap</button>
+                    <button id="btn-none">None</button>
+                </div>
+                <div style="margin-top: 8px;">
+                    <label style="font-size: 12px; color: #a6adc8;">
+                        <input type="checkbox" id="chk-robot-preview" checked> Robot preview on hover
+                    </label>
+                </div>
+                <div class="gain-grid" style="margin-top: 6px;">
+                    <label>Robot Width (m)</label>
+                    <input type="number" id="robot-width" value="0.552" step="0.01" min="0.1" max="2.0">
+                    <label>Robot Height (m)</label>
+                    <input type="number" id="robot-height" value="0.514" step="0.01" min="0.1" max="2.0">
+                </div>
             </div>
         </div>
 
         <div class="section">
-            <h3>Charges</h3>
+            <h3 onclick="toggleSection(this)"><span class="toggle-arrow">&#x25bc;</span> Map Settings</h3>
+            <div class="section-body">
+                <div class="gain-grid">
+                    <label>Name</label>
+                    <input type="text" id="map-name" value="Default Field">
+                    <label>Force Gain</label>
+                    <input type="number" id="gain-force" value="1.0" step="0.1" min="0">
+                    <label>Torque Gain</label>
+                    <input type="number" id="gain-torque" value="0.5" step="0.1" min="0">
+                    <label>Max Velocity</label>
+                    <input type="number" id="gain-max-vel" value="2.0" step="0.1" min="0">
+                    <label>Max Torque</label>
+                    <input type="number" id="gain-max-torque" value="1.5" step="0.1" min="0">
+                </div>
+            </div>
         </div>
-        <div id="charge-list"></div>
 
-        <div id="props-panel" style="display: none;">
-            <h3>Properties</h3>
+        <div class="section" style="flex-shrink: 0; border-bottom: none; padding-bottom: 0;">
+            <h3 onclick="var c=document.getElementById('charges-container'),a=this.querySelector('.toggle-arrow');if(c.style.display==='none'){c.style.display='';a.style.transform='';this.style.marginBottom=''}else{c.style.display='none';a.style.transform='rotate(-90deg)';this.style.marginBottom='0'}"><span class="toggle-arrow">&#x25bc;</span> Charges</h3>
+        </div>
+        <div id="charges-container">
+            <div id="charge-list"></div>
+        </div>
+
+        <div id="props-panel" class="section" style="display: none; flex-shrink: 0;">
+            <h3 id="props-toggle" onclick="var g=document.getElementById('props-grid'),a=this.querySelector('.toggle-arrow');if(g.style.display==='none'){g.style.display='';a.style.transform='';this.style.marginBottom=''}else{g.style.display='none';a.style.transform='rotate(-90deg)';this.style.marginBottom='0'}"><span class="toggle-arrow">&#x25bc;</span> Properties</h3>
             <div class="prop-grid" id="props-grid"></div>
         </div>
 
-        <div class="section">
-            <h3>File</h3>
-            <div class="btn-row">
-                <button id="btn-export">Export JSON</button>
-                <button id="btn-import">Import JSON</button>
-                <button id="btn-clear" class="danger">Clear All</button>
-                <button id="btn-reset" class="danger" title="Reset editor to defaults and clear saved state">Reset</button>
+        <div class="section" style="flex-shrink: 0;">
+            <h3 onclick="toggleSection(this)"><span class="toggle-arrow">&#x25bc;</span> File</h3>
+            <div class="section-body">
+                <div class="btn-row">
+                    <button id="btn-export">Export JSON</button>
+                    <button id="btn-import">Import JSON</button>
+                    <button id="btn-clear" class="danger">Clear All</button>
+                    <button id="btn-reset" class="danger" title="Reset editor to defaults and clear saved state">Reset</button>
+                </div>
+                <input type="file" id="file-input" accept=".json" style="display: none;">
             </div>
-            <input type="file" id="file-input" accept=".json" style="display: none;">
         </div>
     </div>
 
