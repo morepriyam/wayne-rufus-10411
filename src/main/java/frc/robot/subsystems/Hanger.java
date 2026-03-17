@@ -3,8 +3,6 @@ package frc.robot.subsystems;
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Rotations;
-import static edu.wpi.first.units.Units.RotationsPerSecond;
-import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Volts;
 
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
@@ -32,7 +30,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.Constants.KrakenX60;
 import frc.robot.Ports;
 
 public class Hanger extends SubsystemBase {
@@ -56,6 +53,14 @@ public class Hanger extends SubsystemBase {
 
     private static final Per<DistanceUnit, AngleUnit> kHangerExtensionPerMotorAngle = Inches.of(6).div(Rotations.of(142));
     private static final Distance kExtensionTolerance = Inches.of(1);
+
+    /**
+     * MotionMagic cruise velocity (rps) and acceleration (rps²) kept deliberately slow to protect
+     * the climber string. Was previously full Kraken free speed (~100 rps) which was unsafe.
+     * 0.5 rps ≈ 30 RPM — smooth and controllable under load.
+     */
+    private static final double kMotionMagicCruiseVelocityRPS = 0.5;
+    private static final double kMotionMagicAccelerationRPS2  = 0.5;
 
     private final TalonFX motor;
     private final MotionMagicVoltage motionMagicRequest = new MotionMagicVoltage(0).withSlot(0);
@@ -81,15 +86,15 @@ public class Hanger extends SubsystemBase {
             )
             .withMotionMagic(
                 new MotionMagicConfigs()
-                    .withMotionMagicCruiseVelocity(KrakenX60.kFreeSpeed)
-                    .withMotionMagicAcceleration(KrakenX60.kFreeSpeed.per(Second))
+                    .withMotionMagicCruiseVelocity(kMotionMagicCruiseVelocityRPS)
+                    .withMotionMagicAcceleration(kMotionMagicAccelerationRPS2)
             )
             .withSlot0(
                 new Slot0Configs()
                     .withKP(10)
                     .withKI(0)
                     .withKD(0)
-                    .withKV(12.0 / KrakenX60.kFreeSpeed.in(RotationsPerSecond)) // 12 volts when requesting max RPS
+                    .withKV(12.0 / kMotionMagicCruiseVelocityRPS)
             );
 
         motor.getConfigurator().apply(config);
@@ -113,6 +118,16 @@ public class Hanger extends SubsystemBase {
     public Command positionCommand(Position position) {
         return runOnce(() -> set(position))
             .andThen(Commands.waitUntil(this::isExtensionWithinTolerance));
+    }
+
+    /** Extend while held; stop when released. Used for manual D-Pad Up control. */
+    public Command extendCommand() {
+        return startEnd(() -> setPercentOutput(0.5), () -> setPercentOutput(0));
+    }
+
+    /** Retract while held; stop when released. Used for manual D-Pad Down control. */
+    public Command retractCommand() {
+        return startEnd(() -> setPercentOutput(-0.5), () -> setPercentOutput(0));
     }
 
     /**

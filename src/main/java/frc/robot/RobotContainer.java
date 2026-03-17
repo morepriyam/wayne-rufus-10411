@@ -126,10 +126,10 @@ public class RobotContainer {
         // Left Bumper: Stow the intake pivot
         driver.leftBumper().onTrue(intake.runOnce(() -> intake.set(Intake.Position.STOWED)));
 
-        // D-Pad Up: Move hanger to pre-hang (raised) position
-        driver.povUp().onTrue(hanger.positionCommand(Hanger.Position.HANGING));
-        // D-Pad Down: Pull hanger down to hung (climbed) position
-        driver.povDown().onTrue(hanger.positionCommand(Hanger.Position.HUNG));
+        // D-Pad Up: Extend climber while held; release to stop
+        driver.povUp().whileTrue(hanger.extendCommand());
+        // D-Pad Down: Retract climber while held; release to stop
+        driver.povDown().whileTrue(hanger.retractCommand());
         // D-Pad Left: Reverse floor and shooter to clear a jam
         driver.povLeft().whileTrue(Commands.parallel(floor.reverseCommand(), shooter.reverseCommand()));
 
