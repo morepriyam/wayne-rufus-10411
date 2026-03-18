@@ -10,7 +10,6 @@ import static frc.robot.generated.ChoreoTraj.OutpostAndDepotTrajectory$2;
 import static frc.robot.generated.ChoreoTraj.OutpostAndDepotTrajectory$3;
 import frc.robot.generated.BackUpAndShootTraj;
 import frc.robot.generated.ChoreoTraj;
-import frc.robot.generated.ShootAndClimbTraj;
 
 import choreo.auto.AutoChooser;
 import choreo.auto.AutoFactory;
@@ -21,7 +20,6 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import frc.robot.subsystems.Feeder;
 import frc.robot.subsystems.Floor;
-import frc.robot.subsystems.Hanger;
 import frc.robot.subsystems.Hood;
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Limelight;
@@ -32,7 +30,6 @@ public final class AutoRoutines {
     private final Intake intake;
     private final Shooter shooter;
     private final Hood hood;
-    private final Hanger hanger;
     private final Limelight limelight;
 
     private final SubsystemCommands subsystemCommands;
@@ -47,16 +44,14 @@ public final class AutoRoutines {
         Feeder feeder,
         Shooter shooter,
         Hood hood,
-        Hanger hanger,
         Limelight limelight
     ) {
         this.intake = intake;
         this.shooter = shooter;
         this.hood = hood;
-        this.hanger = hanger;
         this.limelight = limelight;
 
-        this.subsystemCommands = new SubsystemCommands(swerve, intake, floor, feeder, shooter, hood, hanger);
+        this.subsystemCommands = new SubsystemCommands(swerve, intake, floor, feeder, shooter, hood);
 
         this.autoFactory = swerve.createAutoFactory();
         this.autoChooser = new AutoChooser();
@@ -66,9 +61,6 @@ public final class AutoRoutines {
         autoChooser.addRoutine("Shoot Only", this::shootOnlyRoutine);
         autoChooser.addRoutine("Back Up Left and Shoot", this::backUpLeftAndShoot);
         autoChooser.addRoutine("Back Up Right and Shoot", this::backUpRightAndShoot);
-        autoChooser.addRoutine("Shoot and Climb — Right", this::shootAndClimbRight);
-        autoChooser.addRoutine("Shoot and Climb — Center", this::shootAndClimbCenter);
-        autoChooser.addRoutine("Shoot and Climb — Left", this::shootAndClimbLeft);
         autoChooser.addRoutine("Outpost and Depot", this::outpostAndDepotRoutine);
         SmartDashboard.putData("Auto Chooser", autoChooser);
         RobotModeTriggers.autonomous().whileTrue(autoChooser.selectedCommandScheduler());
@@ -103,29 +95,6 @@ public final class AutoRoutines {
         return routine;
     }
 
-    private AutoRoutine shootAndClimbRight()  { return shootAndClimbFromPosition(ShootAndClimbTraj.Right,  "Shoot and Climb — Right"); }
-    private AutoRoutine shootAndClimbCenter() { return shootAndClimbFromPosition(ShootAndClimbTraj.Center, "Shoot and Climb — Center"); }
-    private AutoRoutine shootAndClimbLeft()   { return shootAndClimbFromPosition(ShootAndClimbTraj.Left,   "Shoot and Climb — Left"); }
-
-    /** Shared logic: shoot preloaded balls, then drive to tower and climb. */
-    private AutoRoutine shootAndClimbFromPosition(ChoreoTraj trajDef, String name) {
-        final AutoRoutine routine = autoFactory.newRoutine(name);
-        final AutoTrajectory startToTower = trajDef.asAutoTraj(routine);
-
-        routine.active().onTrue(
-            Commands.sequence(
-                startToTower.resetOdometry(),
-                subsystemCommands.aimAndShoot().withTimeout(5),
-                startToTower.cmd()
-            )
-        );
-
-        startToTower.active().onTrue(hanger.positionCommand(Hanger.Position.HANGING));
-        startToTower.done().onTrue(hanger.positionCommand(Hanger.Position.HUNG));
-
-        return routine;
-    }
-
     private AutoRoutine outpostAndDepotRoutine() {
         final AutoRoutine routine = autoFactory.newRoutine("Outpost and Depot");
         final AutoTrajectory startToOutpost = OutpostAndDepotTrajectory$0.asAutoTraj(routine);
@@ -140,12 +109,7 @@ public final class AutoRoutines {
             )
         );
 
-        routine.observe(hanger::isHomed).onTrue(
-            Commands.sequence(
-                Commands.waitSeconds(0.5),
-                intake.runOnce(() -> intake.set(Intake.Position.INTAKE))
-            )
-        );
+        // (climber disabled)
 
         startToOutpost.doneDelayed(1).onTrue(outpostToDepot.cmd());
 
@@ -168,8 +132,6 @@ public final class AutoRoutines {
         );
 
         shootingPoseToTower.active().whileTrue(limelight.idle());
-        shootingPoseToTower.active().onTrue(hanger.positionCommand(Hanger.Position.HANGING));
-        shootingPoseToTower.done().onTrue(hanger.positionCommand(Hanger.Position.HUNG));
 
         return routine;
     }

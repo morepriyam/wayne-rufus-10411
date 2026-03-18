@@ -26,7 +26,6 @@ import com.bionanomics.refinery.forcefield.ForceFieldEngine;
 import com.bionanomics.refinery.forcefield.ForceFieldMap;
 import frc.robot.subsystems.Feeder;
 import frc.robot.subsystems.Floor;
-import frc.robot.subsystems.Hanger;
 import frc.robot.subsystems.Hood;
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Limelight;
@@ -35,9 +34,12 @@ import frc.robot.subsystems.Swerve;
 import frc.util.SwerveTelemetry;
 
 /**
- * This class is where the bulk of the robot should be declared. Since Command-based is a
- * "declarative" paradigm, very little robot logic should actually be handled in the {@link Robot}
- * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
+ * This class is where the bulk of the robot should be declared. Since
+ * Command-based is a
+ * "declarative" paradigm, very little robot logic should actually be handled in
+ * the {@link Robot}
+ * periodic methods (other than the scheduler calls). Instead, the structure of
+ * the robot (including
  * subsystems, commands, and trigger mappings) should be declared here.
  */
 public class RobotContainer {
@@ -47,66 +49,73 @@ public class RobotContainer {
     private final Feeder feeder = new Feeder();
     private final Shooter shooter = new Shooter();
     private final Hood hood = new Hood();
-    private final Hanger hanger = new Hanger();
     private final Limelight limelight = new Limelight("limelight");
 
     private final SwerveTelemetry swerveTelemetry = new SwerveTelemetry(Driving.kMaxSpeed.in(MetersPerSecond));
 
     // Force field system
     private final ForceFieldEngine forceFieldEngine = new ForceFieldEngine(
-        ForceFieldMap.loadFromDeploy(ForceField.kDefaultPreset),
-        ForceField.kCornerOffsets
-    );
+            ForceFieldMap.loadFromDeploy(ForceField.kDefaultPreset),
+            ForceField.kCornerOffsets);
     private final ForceFieldConfig forceFieldConfig = new ForceFieldConfig(forceFieldEngine, ForceField.kDefaultPreset);
-    
+
     private final CommandXboxController driver = new CommandXboxController(0);
 
     private final AutoRoutines autoRoutines = new AutoRoutines(
-        swerve,
-        intake,
-        floor,
-        feeder,
-        shooter,
-        hood,
-        hanger,
-        limelight
-    );
+            swerve,
+            intake,
+            floor,
+            feeder,
+            shooter,
+            hood,
+            limelight);
     private final SubsystemCommands subsystemCommands = new SubsystemCommands(
-        swerve,
-        intake,
-        floor,
-        feeder,
-        shooter,
-        hood,
-        hanger,
-        () -> -driver.getLeftY(),
-        () -> -driver.getLeftX()
-    );
-    
-    /** The container for the robot. Contains subsystems, OI devices, and commands. */
+            swerve,
+            intake,
+            floor,
+            feeder,
+            shooter,
+            hood,
+            () -> -driver.getLeftY(),
+            () -> -driver.getLeftX());
+
+    /**
+     * The container for the robot. Contains subsystems, OI devices, and commands.
+     */
     public RobotContainer() {
         configureBindings();
         autoRoutines.configure();
         swerve.registerTelemetry(swerveTelemetry::telemeterize);
     }
 
-    /** Called from Robot.robotPeriodic() to update force field config (preset changes, live tuning). */
+    /**
+     * Called from Robot.robotPeriodic() to update force field config (preset
+     * changes, live tuning).
+     */
     public void updateForceFieldConfig() {
         forceFieldConfig.update();
     }
 
-    /** Returns the swerve drivetrain for simulation (e.g. updateSimState in simulationPeriodic). */
+    /**
+     * Returns the swerve drivetrain for simulation (e.g. updateSimState in
+     * simulationPeriodic).
+     */
     public Swerve getSwerve() {
         return swerve;
     }
-    
+
     /**
-     * Use this method to define your trigger->command mappings. Triggers can be created via the
-     * {@link Trigger#Trigger(java.util.function.BooleanSupplier)} constructor with an arbitrary
+     * Use this method to define your trigger->command mappings. Triggers can be
+     * created via the
+     * {@link Trigger#Trigger(java.util.function.BooleanSupplier)} constructor with
+     * an arbitrary
      * predicate, or via the named factories in {@link
-     * edu.wpi.first.wpilibj2.command.button.CommandGenericHID}'s subclasses for {@link
-     * CommandXboxController Xbox}/{@link edu.wpi.first.wpilibj2.command.button.CommandPS4Controller
-     * PS4} controllers or {@link edu.wpi.first.wpilibj2.command.button.CommandJoystick Flight
+     * edu.wpi.first.wpilibj2.command.button.CommandGenericHID}'s subclasses for
+     * {@link
+     * CommandXboxController
+     * Xbox}/{@link edu.wpi.first.wpilibj2.command.button.CommandPS4Controller
+     * PS4} controllers or
+     * {@link edu.wpi.first.wpilibj2.command.button.CommandJoystick Flight
      * joysticks}.
      */
     private void configureBindings() {
@@ -114,15 +123,15 @@ public class RobotContainer {
         limelight.setDefaultCommand(updateVisionCommand());
         shooter.setDefaultCommand(shooter.run(shooter::stop));
 
-        // Power-up homing: on first teleop/auto enable (suppressed in test mode), intake pivot and
-        // hanger both run their homing sequences automatically and in parallel.
+        // Power-up homing: on first teleop/auto enable (suppressed in test mode),
+        // intake pivot homes automatically.
         // See README.md ## Power-Up Initialization for the full sequence description.
         RobotModeTriggers.autonomous().or(RobotModeTriggers.teleop())
-            .and(RobotModeTriggers.test().negate())
-            .onTrue(intake.homingCommand())
-            .onTrue(hanger.homingCommand());
+                .and(RobotModeTriggers.test().negate())
+                .onTrue(intake.homingCommand());
 
-        // Right Trigger: Aim at hub using limelight + drive, then spin up shooter and feed when ready
+        // Right Trigger: Aim at hub using limelight + drive, then spin up shooter and
+        // feed when ready
         driver.rightTrigger().whileTrue(subsystemCommands.aimAndShoot());
         // Right Bumper: Spin up shooter to dashboard-configured RPM, then feed
         driver.rightBumper().whileTrue(subsystemCommands.shootManually());
@@ -131,10 +140,7 @@ public class RobotContainer {
         // Left Bumper: Stow the intake pivot
         driver.leftBumper().onTrue(intake.runOnce(() -> intake.set(Intake.Position.STOWED)));
 
-        // D-Pad Up: Extend climber while held; release to stop
-        driver.povUp().whileTrue(hanger.extendCommand());
-        // D-Pad Down: Retract climber while held; release to stop
-        driver.povDown().whileTrue(hanger.retractCommand());
+        // Climbers disabled (no hanger controls).
         // D-Pad Left: Reverse floor and shooter to clear a jam
         driver.povLeft().whileTrue(Commands.parallel(floor.reverseCommand(), shooter.reverseCommand()));
 
@@ -144,12 +150,14 @@ public class RobotContainer {
 
     private void configureManualDriveBindings() {
         final ManualDriveCommand manualDriveCommand = new ManualDriveCommand(
-            swerve, 
-            () -> -driver.getLeftY(), 
-            () -> -driver.getLeftX(), 
-            () -> -driver.getRightX(),
-            forceFieldEngine,
-            () -> false // toggle is handled via button binding below
+                swerve,
+                // Left stick translation scaled for gentler control.
+                () -> -driver.getLeftY() * Driving.kManualTranslationScale,
+                () -> -driver.getLeftX() * Driving.kManualTranslationScale,
+                // Right stick X -> rotation, scaled down for gentler control.
+                () -> -driver.getRightX() * Driving.kManualRotationScale,
+                forceFieldEngine,
+                () -> false // toggle is handled via button binding below
         );
         swerve.setDefaultCommand(manualDriveCommand);
         // A: Lock heading toward opponent alliance wall (180°)
@@ -172,12 +180,11 @@ public class RobotContainer {
             final Optional<Limelight.Measurement> measurement = limelight.getMeasurement(currentRobotPose);
             measurement.ifPresent(m -> {
                 swerve.addVisionMeasurement(
-                    m.poseEstimate.pose, 
-                    m.poseEstimate.timestampSeconds,
-                    m.standardDeviations
-                );
+                        m.poseEstimate.pose,
+                        m.poseEstimate.timestampSeconds,
+                        m.standardDeviations);
             });
         })
-        .ignoringDisable(true);
+                .ignoringDisable(true);
     }
 }
