@@ -94,6 +94,11 @@ public class RobotContainer {
     public void updateForceFieldConfig() {
         forceFieldConfig.update();
     }
+
+    /** Returns the swerve drivetrain for simulation (e.g. updateSimState in simulationPeriodic). */
+    public Swerve getSwerve() {
+        return swerve;
+    }
     
     /**
      * Use this method to define your trigger->command mappings. Triggers can be created via the

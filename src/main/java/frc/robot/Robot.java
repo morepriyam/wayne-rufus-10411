@@ -12,6 +12,8 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
 
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -40,8 +42,11 @@ public class Robot extends LoggedRobot {
         RobotController.setBrownoutVoltage(Volts.of(6.1));
         // AdvantageKit logging: write to USB stick + publish to NetworkTables
         Logger.recordMetadata("ProjectName", "rufus10411");
-        Logger.addDataReceiver(new WPILOGWriter("/home/lvuser/logs")); // Retrieve via SFTP: sftp
-                                                                       // lvuser@10.104.11.2:/home/lvuser/logs
+        if (RobotBase.isReal()) {
+            Logger.addDataReceiver(new WPILOGWriter("/home/lvuser/logs")); // Retrieve via SFTP: sftp lvuser@10.104.11.2:/home/lvuser/logs
+        } else {
+            Logger.addDataReceiver(new WPILOGWriter(Filesystem.getOperatingDirectory().getAbsolutePath() + "/logs"));
+        }
         Logger.addDataReceiver(new NT4Publisher()); // Live data in AdvantageScope
         Logger.start();
     }
@@ -71,4 +76,13 @@ public class Robot extends LoggedRobot {
         m_robotContainer.updateForceFieldConfig();
     }
 
+    /**
+     * Called every 20 ms only when the robot is running in simulation.
+     * CTRE SwerveDrivetrain requires updateSimState() here so the simulated pose
+     * (and thus Field2d / AdvantageScope) updates when you drive.
+     */
+    @Override
+    public void simulationPeriodic() {
+        m_robotContainer.getSwerve().updateSimState(0.020, RobotController.getBatteryVoltage());
+    }
 }

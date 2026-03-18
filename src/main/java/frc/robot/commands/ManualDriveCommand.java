@@ -14,7 +14,6 @@ import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.ctre.phoenix6.swerve.SwerveRequest.ForwardPerspectiveValue;
 
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.units.measure.Time;
@@ -59,6 +58,7 @@ public class ManualDriveCommand extends Command {
     private final DriveInputSmoother inputSmoother;
     private final ForceFieldEngine forceFieldEngine;
     private final BooleanSupplier forceFieldToggle;
+    private boolean lastForceFieldToggleState = false;
     private final NetworkTableEntry fieldCentricEntry;
     private final SwerveRequest.Idle idleRequest = new SwerveRequest.Idle();
     private boolean forceFieldEnabled = false;
@@ -138,6 +138,7 @@ public class ManualDriveCommand extends Command {
         lockedHeading = Optional.empty();
         headingLockStopwatch.reset();
         previousInput = new ManualDriveInput();
+        lastForceFieldToggleState = false;
     }
 
     /** Toggles the force field on/off (called from a controller button binding). */
@@ -173,6 +174,11 @@ public class ManualDriveCommand extends Command {
         final ManualDriveInput input = inputSmoother.getSmoothedInput();
         final boolean isFieldCentric = fieldCentricEntry.getBoolean(true);
         final ForceResult forceResult = computeForceField();
+        final boolean currentToggleState = forceFieldToggle.getAsBoolean();
+        if (currentToggleState && !lastForceFieldToggleState) {
+            toggleForceField();
+        }
+        lastForceFieldToggleState = currentToggleState;
 
         // Force field velocity offsets (field-frame, m/s)
         final LinearVelocity ffVx = LinearVelocity.ofBaseUnits(forceResult.velocityOffset().getX(), MetersPerSecond);
