@@ -10,6 +10,7 @@ import java.util.Optional;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -20,6 +21,7 @@ import frc.robot.Constants.ForceField;
 import frc.robot.commands.AutoRoutines;
 import frc.robot.commands.FuelChaseCommand;
 import frc.robot.commands.ManualDriveCommand;
+import frc.robot.commands.PrepareShotCommand.Shot;
 import frc.robot.commands.SubsystemCommands;
 import com.bionanomics.refinery.forcefield.ForceFieldConfig;
 import com.bionanomics.refinery.forcefield.ForceFieldEngine;
@@ -43,6 +45,16 @@ import frc.util.SwerveTelemetry;
  * subsystems, commands, and trigger mappings) should be declared here.
  */
 public class RobotContainer {
+    /** Named shot presets — distance label, RPM, hood position. Tune RPMs per distance. */
+    private static final String[] PRESET_NAMES = { "CLOSE (~52\")", "MID (~114\")", "FAR (~166\")" };
+    private static final Shot[] SHOT_PRESETS = {
+        new Shot(3750, 0.19), // close  ~52"
+        new Shot(3700, 0.40), // mid   ~114"
+        new Shot(3950, 0.48), // far   ~166"
+    };
+    /** Mutable index wrapped in array so lambdas can mutate it. */
+    private final int[] presetIndex = { 0 };
+
     private final Swerve swerve = new Swerve();
     private final Intake intake = new Intake();
     private final Floor floor = new Floor();
@@ -86,6 +98,10 @@ public class RobotContainer {
         configureBindings();
         autoRoutines.configure();
         swerve.registerTelemetry(swerveTelemetry::telemeterize);
+        // Publish initial preset so SmartDashboard shows state before first button press
+        SmartDashboard.putString("Shot Preset", PRESET_NAMES[presetIndex[0]]);
+        SmartDashboard.putNumber("Preset RPM", SHOT_PRESETS[presetIndex[0]].shooterRPM);
+        SmartDashboard.putNumber("Preset Hood", SHOT_PRESETS[presetIndex[0]].hoodPosition);
     }
 
     /**
@@ -133,8 +149,8 @@ public class RobotContainer {
         // Right Trigger: Aim at hub using limelight + drive, then spin up shooter and
         // feed when ready
         driver.rightTrigger().whileTrue(subsystemCommands.aimAndShoot());
-        // Right Bumper: Spin up shooter to dashboard-configured RPM, then feed
-        driver.rightBumper().whileTrue(subsystemCommands.shootManually());
+        // Right Bumper: Spin up shooter to the selected preset RPM, then feed
+        driver.rightBumper().whileTrue(subsystemCommands.shootManually(() -> SHOT_PRESETS[presetIndex[0]].shooterRPM));
         // Left Trigger: Deploy intake and run rollers to pick up a note
         driver.leftTrigger().whileTrue(intake.intakeCommand());
         // Left Bumper: Stow the intake pivot
@@ -143,6 +159,22 @@ public class RobotContainer {
         // Climbers disabled (no hanger controls).
         // D-Pad Left: Reverse floor and shooter to clear a jam
         driver.povLeft().whileTrue(Commands.parallel(floor.reverseCommand(), shooter.reverseCommand()));
+
+        // D-Pad Up/Down: Cycle through shot presets (snaps hood + RPM to known-good combo)
+        driver.povUp().onTrue(Commands.runOnce(() -> {
+            presetIndex[0] = (presetIndex[0] + 1) % SHOT_PRESETS.length;
+            hood.setPosition(SHOT_PRESETS[presetIndex[0]].hoodPosition);
+            SmartDashboard.putString("Shot Preset", PRESET_NAMES[presetIndex[0]]);
+            SmartDashboard.putNumber("Preset RPM", SHOT_PRESETS[presetIndex[0]].shooterRPM);
+            SmartDashboard.putNumber("Preset Hood", SHOT_PRESETS[presetIndex[0]].hoodPosition);
+        }));
+        driver.povDown().onTrue(Commands.runOnce(() -> {
+            presetIndex[0] = (presetIndex[0] - 1 + SHOT_PRESETS.length) % SHOT_PRESETS.length;
+            hood.setPosition(SHOT_PRESETS[presetIndex[0]].hoodPosition);
+            SmartDashboard.putString("Shot Preset", PRESET_NAMES[presetIndex[0]]);
+            SmartDashboard.putNumber("Preset RPM", SHOT_PRESETS[presetIndex[0]].shooterRPM);
+            SmartDashboard.putNumber("Preset Hood", SHOT_PRESETS[presetIndex[0]].hoodPosition);
+        }));
 
         // Start: Chase visible fuel using Limelight Neural Detector + run intake
         driver.start().whileTrue(new FuelChaseCommand(swerve, limelight, intake));

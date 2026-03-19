@@ -51,6 +51,11 @@ public class Hood extends SubsystemBase {
         targetPosition = clampedPosition;
     }
 
+    /** Nudges position by delta — clamps to [kMinPosition, kMaxPosition]. */
+    public void nudge(double delta) {
+        setPosition(targetPosition + delta);
+    }
+
     /** Expects a position between 0.0 and 1.0 */
     public Command positionCommand(double position) {
         return runOnce(() -> setPosition(position))

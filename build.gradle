@@ -61,6 +61,9 @@ dependencies {
     // Refinery ForceField library (composite build)
     implementation 'com.bionanomics.refinery:refinery-forcefield'
 
+    // Refinery roboRIO MCP server (composite build)
+    implementation 'com.bionanomics.refinery:refinery-roborio-mcp'
+
     roborioDebug wpi.java.deps.wpilibJniDebug(wpi.platforms.roborio)
     roborioDebug wpi.java.vendor.jniDebug(wpi.platforms.roborio)
 
@@ -95,6 +98,9 @@ task(replayWatch, type: JavaExec) {
     mainClass = "org.littletonrobotics.junction.ReplayWatch"
     classpath = sourceSets.main.runtimeClasspath
 }
+
+// Build the MCP server JAR before the fat jar tries to bundle it
+jar.dependsOn gradle.includedBuild('refinery-roborio-mcp').task(':jar')
 
 // Setting up my Jar File. In this case, adding all libraries into the main jar ('fat jar')
 // in order to make them all available at runtime. Also adding the manifest so WPILib

@@ -21,6 +21,8 @@
 - [ ] `Right Bumper` (hold): `shootManually()` (spin shooter + feed)
 
 - [ ] D-pad `Left` (hold): reverse floor + reverse shooter (parallel)
+- [ ] D-pad `Up` (press): nudge hood +0.02 (raise)
+- [ ] D-pad `Down` (press): nudge hood -0.02 (lower)
 
 - [ ] `Right Stick Button` (press): toggle force field overlay on/off
 
@@ -41,4 +43,4 @@
 - `Right Bumper`: while held, runs `shootManually()` (spins shooter to dashboard RPM and feeds once above threshold)
 - `D-pad Left`: while held, runs `floor.reverseCommand()` and `shooter.reverseCommand()` in parallel (stops on release)
 - `Right Stick Button`: press toggles the ForceField overlay/pushback behavior on/off
-- Not bound / no action (confirm): D-pad `Up`, D-pad `Down`, D-pad `Right`, `Left Stick Button`, `Guide`
+- Not bound / no action (confirm): D-pad `Right`, `Left Stick Button`, `Guide`

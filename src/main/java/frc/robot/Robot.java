@@ -11,6 +11,7 @@ import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
 
+import com.bionanomics.refinery.mcp.RoboRioMcpServer;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.RobotBase;
@@ -40,6 +41,11 @@ public class Robot extends LoggedRobot {
         m_robotContainer = new RobotContainer();
         SmartDashboard.putData(CommandScheduler.getInstance());
         RobotController.setBrownoutVoltage(Volts.of(6.1));
+        try {
+            RoboRioMcpServer.start(); // port 8765 — sim: localhost, robot: 10.104.11.2
+        } catch (Exception e) {
+            DriverStation.reportWarning("MCP server failed to start: " + e.getMessage(), false);
+        }
         // AdvantageKit logging: write to USB stick + publish to NetworkTables
         Logger.recordMetadata("ProjectName", "rufus10411");
         if (RobotBase.isReal()) {
