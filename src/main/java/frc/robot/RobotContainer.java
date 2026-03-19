@@ -151,10 +151,18 @@ public class RobotContainer {
         driver.rightTrigger().whileTrue(subsystemCommands.aimAndShoot());
         // Right Bumper: Spin up shooter to the selected preset RPM, then feed
         driver.rightBumper().whileTrue(subsystemCommands.shootManually(() -> SHOT_PRESETS[presetIndex[0]].shooterRPM));
-        // Left Trigger: Deploy intake and run rollers to pick up a note
-        driver.leftTrigger().whileTrue(intake.intakeCommand());
-        // Left Bumper: Stow the intake pivot
-        driver.leftBumper().onTrue(intake.runOnce(() -> intake.set(Intake.Position.STOWED)));
+        // Left Bumper: toggle pivot STOWED <-> INTAKE; ignored while pivot is mid-move
+        final boolean[] pivotDeployed = { false };
+        driver.leftBumper().onTrue(Commands.runOnce(() -> {
+            if (!intake.isAtTarget()) return;
+            pivotDeployed[0] = !pivotDeployed[0];
+            intake.set(pivotDeployed[0] ? Intake.Position.INTAKE : Intake.Position.STOWED);
+        }));
+        // Left Trigger: run rollers only (pivot stays wherever it is)
+        driver.leftTrigger().whileTrue(intake.startEnd(
+            () -> intake.set(Intake.Speed.INTAKE),
+            () -> intake.set(Intake.Speed.STOP)
+        ));
 
         // Climbers disabled (no hanger controls).
         // D-Pad Left: Reverse floor and shooter to clear a jam

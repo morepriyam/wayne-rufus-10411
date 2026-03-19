@@ -15,9 +15,9 @@
 - [ ] `Back` (press): re-zero field-centric heading (`seedFieldCentric`)
 - [ ] `Start` (hold): run `FuelChaseCommand` (aim/drive + intake)
 
-- [ ] `Left Trigger` (hold): `intake.intakeCommand()` (pivot + rollers)
+- [x] `Left Trigger` (hold): run rollers only; stops on release (pivot unaffected)
 - [ ] `Right Trigger` (hold): `aimAndShoot()` (aim + prep + feed)
-- [ ] `Left Bumper` (press): stow intake pivot (`Position.STOWED`)
+- [x] `Left Bumper` (press): toggle pivot `STOWED` ↔ `INTAKE`; ignored while mid-move
 - [ ] `Right Bumper` (hold): `shootManually()` (spin shooter + feed)
 
 - [ ] D-pad `Left` (hold): reverse floor + reverse shooter (parallel)
@@ -37,9 +37,9 @@
 - `Y`: locks robot heading to `0deg`
 - `Back`: re-seeds field-centric heading to the robot’s current orientation (`seedFieldCentric`)
 - `Start`: runs `FuelChaseCommand` while held (Limelight + drive + intake)
-- `Left Trigger`: while held, runs `intake.intakeCommand()`; on release, rollers stop and pivot stows (`Position.STOWED`)
+- `Left Trigger`: while held, runs rollers only (`Speed.INTAKE`); on release, rollers stop (`Speed.STOP`); pivot position unaffected
 - `Right Trigger`: while held, runs `aimAndShoot()` (aiming + shot prep + feeder/floor feed)
-- `Left Bumper`: on press, stows intake pivot (`intake.set(Position.STOWED)`)
+- `Left Bumper`: toggles pivot between `STOWED` and `INTAKE`; press is ignored if pivot is still mid-move
 - `Right Bumper`: while held, runs `shootManually()` (spins shooter to dashboard RPM and feeds once above threshold)
 - `D-pad Left`: while held, runs `floor.reverseCommand()` and `shooter.reverseCommand()` in parallel (stops on release)
 - `Right Stick Button`: press toggles the ForceField overlay/pushback behavior on/off
