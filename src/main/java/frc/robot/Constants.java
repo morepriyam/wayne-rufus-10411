@@ -31,21 +31,14 @@ public final class Constants {
         public static final LinearVelocity kLimitedSpeed = LinearVelocity.ofBaseUnits(4, MetersPerSecond);
         public static final AngularVelocity kMaxRotationalRate = RotationsPerSecond.of(1);
         /** Scales manual rotation stick input to make turning easier to control. */
-        public static final double kManualRotationScale = 0.6;
+        public static final double kManualRotationScale = 0.7;
         /** Scales manual translation stick input for gentler driving control. */
-        public static final double kManualTranslationScale = 0.6;
+        public static final double kManualTranslationScale = 0.7;
         public static final AngularVelocity kPIDRotationDeadband = kMaxRotationalRate.times(0.005);
     }
 
     public static class KrakenX60 {
         public static final AngularVelocity kFreeSpeed = RPM.of(6000);
-    }
-
-    public static class Vision {
-        /** AprilTag localization pipeline (default). */
-        public static final int PIPELINE_APRILTAG = 0;
-        /** Neural Detector pipeline for fuel game pieces. */
-        public static final int PIPELINE_FUEL_DETECTOR = 1;
     }
 
     public static class ForceField {

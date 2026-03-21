@@ -19,7 +19,6 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.Driving;
 import frc.robot.Constants.ForceField;
 import frc.robot.commands.AutoRoutines;
-import frc.robot.commands.FuelChaseCommand;
 import frc.robot.commands.ManualDriveCommand;
 import frc.robot.commands.PrepareShotCommand.Shot;
 import frc.robot.commands.SubsystemCommands;
@@ -90,6 +89,16 @@ public class RobotContainer {
             hood,
             () -> -driver.getLeftY(),
             () -> -driver.getLeftX());
+    private final ManualDriveCommand manualDriveCommand = new ManualDriveCommand(
+            swerve,
+            // Left stick translation scaled for gentler control.
+            () -> -driver.getLeftY() * Driving.kManualTranslationScale,
+            () -> -driver.getLeftX() * Driving.kManualTranslationScale,
+            // Right stick X -> rotation, scaled down for gentler control.
+            () -> -driver.getRightX() * Driving.kManualRotationScale,
+            forceFieldEngine,
+            () -> false // toggle is handled via button binding below
+    );
 
     /**
      * The container for the robot. Contains subsystems, OI devices, and commands.
@@ -139,22 +148,19 @@ public class RobotContainer {
         limelight.setDefaultCommand(updateVisionCommand());
         shooter.setDefaultCommand(shooter.run(shooter::stop));
 
-        // Power-up homing: on first teleop/auto enable (suppressed in test mode),
-        // intake pivot homes automatically.
-        // See README.md ## Power-Up Initialization for the full sequence description.
+        // On teleop/auto enable, force intake down (do not auto-stow/homing).
         RobotModeTriggers.autonomous().or(RobotModeTriggers.teleop())
                 .and(RobotModeTriggers.test().negate())
-                .onTrue(intake.homingCommand());
+                .onTrue(Commands.runOnce(() -> intake.set(Intake.Position.INTAKE)));
 
-        // Right Trigger: Aim at hub using limelight + drive, then spin up shooter and
-        // feed when ready
-        driver.rightTrigger().whileTrue(subsystemCommands.aimAndShoot());
+        // Right Trigger: Re-seed field-centric heading to current robot orientation.
+        // Use after manually aligning robot so ABXY lock headings align correctly.
+        driver.rightTrigger().onTrue(Commands.runOnce(() -> manualDriveCommand.seedFieldCentric()));
         // Right Bumper: Spin up shooter to the selected preset RPM, then feed
         driver.rightBumper().whileTrue(subsystemCommands.shootManually(() -> SHOT_PRESETS[presetIndex[0]].shooterRPM));
-        // Left Bumper: toggle pivot STOWED <-> INTAKE; ignored while pivot is mid-move
-        final boolean[] pivotDeployed = { false };
+        // Left Bumper: toggle pivot STOWED <-> INTAKE immediately, even mid-move
+        final boolean[] pivotDeployed = { true };
         driver.leftBumper().onTrue(Commands.runOnce(() -> {
-            if (!intake.isAtTarget()) return;
             pivotDeployed[0] = !pivotDeployed[0];
             intake.set(pivotDeployed[0] ? Intake.Position.INTAKE : Intake.Position.STOWED);
         }));
@@ -184,21 +190,9 @@ public class RobotContainer {
             SmartDashboard.putNumber("Preset Hood", SHOT_PRESETS[presetIndex[0]].hoodPosition);
         }));
 
-        // Start: Chase visible fuel using Limelight Neural Detector + run intake
-        driver.start().whileTrue(new FuelChaseCommand(swerve, limelight, intake));
     }
 
     private void configureManualDriveBindings() {
-        final ManualDriveCommand manualDriveCommand = new ManualDriveCommand(
-                swerve,
-                // Left stick translation scaled for gentler control.
-                () -> -driver.getLeftY() * Driving.kManualTranslationScale,
-                () -> -driver.getLeftX() * Driving.kManualTranslationScale,
-                // Right stick X -> rotation, scaled down for gentler control.
-                () -> -driver.getRightX() * Driving.kManualRotationScale,
-                forceFieldEngine,
-                () -> false // toggle is handled via button binding below
-        );
         swerve.setDefaultCommand(manualDriveCommand);
         // A: Lock heading toward opponent alliance wall (180°)
         driver.a().onTrue(Commands.runOnce(() -> manualDriveCommand.setLockedHeading(Rotation2d.k180deg)));

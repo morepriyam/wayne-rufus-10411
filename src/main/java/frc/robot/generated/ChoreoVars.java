@@ -1,7 +1,8 @@
 // spotless:off
 package frc.robot.generated;
 
-// No imports needed for empty variables file
+import edu.wpi.first.units.Units;
+import edu.wpi.first.units.measure.*;
 
 /**
  * Generated file containing variables defined in Choreo.
@@ -9,6 +10,7 @@ package frc.robot.generated;
  * in the Choreo GUI.
  */
 public final class ChoreoVars {
+
 
     public static final class Poses {
 

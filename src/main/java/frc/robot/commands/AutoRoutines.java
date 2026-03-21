@@ -7,6 +7,7 @@ package frc.robot.commands;
 import static frc.robot.generated.ChoreoTraj.OutpostAndDepotTrajectory$0;
 import static frc.robot.generated.ChoreoTraj.OutpostAndDepotTrajectory$1;
 import static frc.robot.generated.ChoreoTraj.OutpostAndDepotTrajectory$2;
+import static frc.robot.generated.ChoreoTraj.OutpostAndDepotTrajectory$3;
 import frc.robot.generated.BackUpAndShootTraj;
 import frc.robot.generated.ChoreoTraj;
 
@@ -27,6 +28,8 @@ import frc.robot.subsystems.Swerve;
 
 public final class AutoRoutines {
     private final Intake intake;
+    private final Floor floor;
+    private final Feeder feeder;
     private final Shooter shooter;
     private final Hood hood;
     private final Limelight limelight;
@@ -45,6 +48,8 @@ public final class AutoRoutines {
             Hood hood,
             Limelight limelight) {
         this.intake = intake;
+        this.floor = floor;
+        this.feeder = feeder;
         this.shooter = shooter;
         this.hood = hood;
         this.limelight = limelight;
@@ -101,6 +106,7 @@ public final class AutoRoutines {
         final AutoTrajectory startToOutpost = OutpostAndDepotTrajectory$0.asAutoTraj(routine);
         final AutoTrajectory outpostToDepot = OutpostAndDepotTrajectory$1.asAutoTraj(routine);
         final AutoTrajectory depotToShootingPose = OutpostAndDepotTrajectory$2.asAutoTraj(routine);
+        final AutoTrajectory shootingPose = OutpostAndDepotTrajectory$3.asAutoTraj(routine);
 
         routine.active().onTrue(
                 Commands.sequence(
@@ -119,9 +125,18 @@ public final class AutoRoutines {
                 Commands.parallel(
                         shooter.spinUpCommand(2600),
                         hood.positionCommand(0.32)));
-        // End the routine after shooting - no climb trajectory
-        depotToShootingPose.done().onTrue(
-                subsystemCommands.aimAndShoot().withTimeout(5));
+        depotToShootingPose.done().onTrue(shootingPose.cmd());
+
+        // Stop at final shooting pose and shoot without re-aiming/turning.
+        shootingPose.done().onTrue(
+                Commands.parallel(
+                        shooter.spinUpCommand(3850.0).andThen(shooter.run(() -> shooter.setRPM(3850.0))),
+                        hood.positionCommand(0.32),
+                        Commands.waitUntil(shooter::isAboveFeedThreshold)
+                                .andThen(Commands.parallel(
+                                        feeder.feedCommand(),
+                                        floor.feedCommand())))
+                        .withTimeout(6));
 
         return routine;
     }
