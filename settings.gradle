@@ -31,3 +31,6 @@ props.setProperty("org.gradle.internal.native.headers.unresolved.dependencies.ig
 
 // Include the refinery-forcefield library as a composite build
 includeBuild 'refinery-forcefield'
+
+// Include the roboRIO MCP server (exposes robot state to AI assistants)
+includeBuild 'refinery-roborio-mcp'

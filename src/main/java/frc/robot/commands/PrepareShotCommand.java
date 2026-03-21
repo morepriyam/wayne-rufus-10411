@@ -21,22 +21,18 @@ import frc.robot.subsystems.Shooter;
 
 public class PrepareShotCommand extends Command {
     private static final InterpolatingTreeMap<Distance, Shot> distanceToShotMap = new InterpolatingTreeMap<>(
-        (startValue, endValue, q) -> 
-            InverseInterpolator.forDouble()
-                .inverseInterpolate(startValue.in(Meters), endValue.in(Meters), q.in(Meters)),
-        (startValue, endValue, t) ->
-            new Shot(
-                Interpolator.forDouble()
-                    .interpolate(startValue.shooterRPM, endValue.shooterRPM, t),
-                Interpolator.forDouble()
-                    .interpolate(startValue.hoodPosition, endValue.hoodPosition, t)
-            )
-    );
+            (startValue, endValue, q) -> InverseInterpolator.forDouble()
+                    .inverseInterpolate(startValue.in(Meters), endValue.in(Meters), q.in(Meters)),
+            (startValue, endValue, t) -> new Shot(
+                    Interpolator.forDouble()
+                            .interpolate(startValue.shooterRPM, endValue.shooterRPM, t),
+                    Interpolator.forDouble()
+                            .interpolate(startValue.hoodPosition, endValue.hoodPosition, t)));
 
     static {
-        distanceToShotMap.put(Inches.of(52.0), new Shot(5000, 0.19));
-        distanceToShotMap.put(Inches.of(114.4), new Shot(5000, 0.40));
-        distanceToShotMap.put(Inches.of(165.5), new Shot(5000, 0.48));
+        distanceToShotMap.put(Inches.of(52.0),  new Shot(3750, 0.19));
+        distanceToShotMap.put(Inches.of(114.4), new Shot(3700, 0.40));
+        distanceToShotMap.put(Inches.of(165.5), new Shot(3950, 0.48));
     }
 
     private final Shooter shooter;
@@ -51,7 +47,12 @@ public class PrepareShotCommand extends Command {
     }
 
     public boolean isReadyToShoot() {
-        return shooter.isAboveFeedThreshold() && hood.isPositionWithinTolerance();
+        // isAboveFeedThreshold guards against false-ready when shooter hasn't started
+        // yet
+        // isVelocityWithinTolerance ensures we're within 100 RPM of the actual target
+        // (not just 3500)
+        return shooter.isAboveFeedThreshold() && shooter.isVelocityWithinTolerance()
+                && hood.isPositionWithinTolerance();
     }
 
     private Distance getDistanceToHub() {

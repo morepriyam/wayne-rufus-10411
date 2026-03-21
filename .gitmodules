@@ -1,0 +1,9 @@
+[submodule "2026CompetitiveConcept"]
+	path = 2026CompetitiveConcept
+	url = https://github.com/wcpllc/2026CompetitiveConcept.git
+[submodule "open-ds.ai"]
+	path = open-ds.ai
+	url = https://github.com/morepriyam/open-ds.ai.git
+[submodule "refinery-roborio-mcp"]
+	path = refinery-roborio-mcp
+	url = https://github.com/BioNanomics/refinery-roborio-mcp

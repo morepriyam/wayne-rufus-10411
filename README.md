@@ -422,3 +422,530 @@ Download the `.AppImage` or `.deb` from the releases page on [choreo.autos](http
 3. Generate the path.
 4. Save — Choreo writes a new `.traj` file to the `choreo/` folder.
 5. Follow the [Adding or Editing a Routine](#adding-or-editing-a-routine) steps above to wire it into Java.
+
+---
+
+## Software Architecture
+
+### The Execution Loop
+
+There is one entry point. Everything on the robot flows from a single 20 ms heartbeat in `Robot.robotPeriodic()`:
+
+```java
+CommandScheduler.getInstance().run();   // polls buttons, runs commands, runs subsystem periodic()
+Logger.recordOutput("Robot/BatteryVoltage", RobotController.getBatteryVoltage());
+Logger.recordOutput("Robot/MatchTimeSec", DriverStation.getMatchTime());
+m_robotContainer.updateForceFieldConfig();
+```
+
+`CommandScheduler.run()` does four things in order every 20 ms:
+1. Polls all button/trigger bindings → schedules new commands
+2. Runs `execute()` on every active command
+3. Runs `periodic()` on every subsystem
+4. Removes finished or interrupted commands
+
+**There is no `teleopInit`, no `autonomousInit`, no mode-specific code.** Mode transitions are handled entirely by `RobotModeTriggers` triggers in `RobotContainer`. This is the new command-based pattern — everything is declared, nothing is procedural.
+
+### Old vs New Command-Based Pattern
+
+| Old pattern | New pattern (this codebase) |
+|---|---|
+| `OI.java` wiring class | `RobotContainer` + trigger chaining |
+| `Scheduler.getInstance().addCommand()` | `.whileTrue()`, `.onTrue()` on `Trigger` objects |
+| `CommandGroup` subclasses | `Commands.parallel()`, `Commands.sequence()` inline |
+| `isFinished()` in subclass | `waitUntil()` as a composable primitive |
+| `teleopInit()` / `autonomousInit()` | `RobotModeTriggers.teleop()` / `.autonomous()` |
+| `PIDCommand` boilerplate | Direct `setControl()` calls on Phoenix 6 motors |
+
+### Subsystem Ownership Model
+
+Every subsystem extends `SubsystemBase`. Only one command can hold a subsystem at a time. When a new command needs a subsystem already held, it either cancels the running one (default `kCancelIncoming` behavior) or cancels itself (`kCancelSelf`).
+
+**Who holds what at any moment in teleop:**
+
+| Subsystem | Default holder | Interrupted by |
+|---|---|---|
+| Swerve | `ManualDriveCommand` | `AimAndDriveCommand` (RT), `FuelChaseCommand` (Start) |
+| Intake | nothing (holds last position) | `intakeCommand` (LT), `agitateCommand`, `FuelChaseCommand`, `homingCommand` |
+| Shooter | `run(shooter::stop)` — coasts | `spinUpCommand`, `reverseCommand`, `dashboardSpinUpCommand` |
+| Floor | nothing (brakes in place) | `feedCommand`, `reverseCommand` (D-Pad Left) |
+| Feeder | nothing (coasts in place) | `feedCommand` |
+| Hood | nothing (servos hold last position) | `positionCommand` |
+| Hanger | nothing (brakes in place) | `positionCommand` (D-Pad), `homingCommand` |
+| Limelight | `updateVisionCommand()` — runs disabled too | `idle()` during auto drive segments |
+
+---
+
+## CAN Bus & Hardware Map
+
+Verify every ID in **Phoenix Tuner X** before the first enable.
+
+| Device | CAN ID | Bus | Notes |
+|---|---|---|---|
+| Swerve Front Left Drive | 7 | `rio` | |
+| Swerve Front Left Steer | 8 | `rio` | |
+| Swerve Front Right Drive | 5 | `rio` | |
+| Swerve Front Right Steer | 6 | `rio` | |
+| Swerve Back Left Drive | 3 | `rio` | |
+| Swerve Back Left Steer | 4 | `rio` | |
+| Swerve Back Right Drive | 1 | `rio` | |
+| Swerve Back Right Steer | 2 | `rio` | |
+| CANcoder FL | 12 | `rio` | |
+| CANcoder FR | 11 | `rio` | |
+| CANcoder BL | 10 | `rio` | |
+| CANcoder BR | 9 | `rio` | |
+| Pigeon 2 IMU | 13 | `rio` | |
+| Hanger | 14 | `rio` | MotionMagic, CW+, Brake |
+| Floor | 15 | `rio` | Open-loop VoltageOut, CCW+, Brake |
+| Shooter Middle | 16 | `rio` | VelocityVoltage, CCW+, Coast |
+| Shooter Right | 18 | `rio` | VelocityVoltage, CW+, Coast |
+| Feeder | 19 | `rio` | VelocityVoltage, CW+, Coast |
+| Intake Pivot | 20 | `rio` | MotionMagic, CCW+, Brake |
+| Shooter Left | 21 | `rio` | VelocityVoltage, CCW+, Coast |
+| Intake Rollers | 22 | `rio` | Open-loop VoltageOut, CW+, Brake |
+| Hood Left Servo | PWM 3 | — | `setBoundsMicroseconds(2000,1800,1500,1200,1000)` |
+| Hood Right Servo | PWM 4 | — | same bounds |
+
+> All mechanisms are on CAN bus `"rio"`. The CANivore bus `"main"` is defined in `Ports.java` but currently unused.
+
+---
+
+## Subsystem Reference
+
+### Swerve
+
+`Swerve` extends `TunerSwerveDrivetrain` and `implements Subsystem` (not `SubsystemBase`). Four TalonFX drive motors, four TalonFX steer motors, four CANcoders, Pigeon 2 IMU — all from `TunerConstants`. Free speed 5.85 m/s. Limited (robot-centric) speed 4.0 m/s.
+
+**`periodic()` sets operator perspective** — while disabled, or on first cycle, it reads the FMS alliance color and sets "forward" to 0° (Blue) or 180° (Red). This is what makes the left stick always drive toward the opponent wall regardless of which side you're on. **If the robot drives in the wrong direction, check `AdvantageKit/DriverStation/AllianceStation` — the wrong alliance color is almost always the cause.**
+
+**Path follower** — `followPath(SwerveSample)` is called by ChoreoLib every cycle during auto. It adds PID corrections to the trajectory's feed-forward speeds:
+- X/Y: P=10 (position correction in meters)
+- Theta: P=7 (heading correction in radians)
+
+If the robot drifts off the path in auto, increase these values carefully. Increasing too much causes oscillation.
+
+**Vision fusion** — `addVisionMeasurement()` is overridden to convert FPGA timestamps: `Utils.fpgaToCurrentTime(timestampSeconds)`. Initial std devs are `[0.1, 0.1, 0.1]` for both odometry and vision. Per-measurement std devs of `[0.1m, 0.1m, 10.0 rad]` are passed with each Limelight update (high rotation uncertainty = gyro is trusted over vision for heading).
+
+---
+
+### Intake
+
+Two motors: pivot (CAN 20, MotionMagic, 50:1 reduction) and rollers (CAN 22, open-loop voltage).
+
+**Positions:**
+
+| Enum | Degrees | When used |
+|---|---|---|
+| `HOMED` | 110° | Hard stop reference — encoder zeroed here on boot |
+| `STOWED` | 100° | Normal resting position, inside frame |
+| `INTAKE` | −4° | Fully deployed to floor |
+| `AGITATE` | 20° | Oscillated during feed to shake stuck notes |
+
+**Key behaviors:**
+- `intakeCommand()` (LT): deploys to −4°, runs rollers at 80%. On release: stops rollers **and stows to 100°** automatically.
+- `agitateCommand()`: oscillates between −4° and 20° while running rollers. Used inside `feed()` — not a driver binding.
+- `homingCommand()`: drives outward at 10% until supply current >6A (hard stop), zeros encoder to 110°, stows. Uses `kCancelIncoming` — cannot be interrupted. Runs once per boot.
+
+**If homing hangs:** the current threshold of 6A in `homingCommand()` may not match your motor's actual stall current. Watch `Intake/PivotSupplyCurrent` in AdvantageScope during homing and adjust the threshold in `Intake.java` if needed.
+
+---
+
+### Shooter
+
+Three TalonFX motors (CAN 21, 16, 18). Left + Middle = CCW+, Right = CW+. All Coast mode. VelocityVoltage Slot0: KP=0.5, KI=0, KD=0, KV=12/maxRPS.
+
+**Feed gate logic — two checks exist, know which does what:**
+
+| Method | What it checks | Where used |
+|---|---|---|
+| `isAboveFeedThreshold()` | All motors ≥ 3500 RPM | `isReadyToShoot()` guard (prevents false-ready at 0 RPM) |
+| `isVelocityWithinTolerance()` | All motors within ±100 RPM of requested target | `isReadyToShoot()` actual check; logged as `Shooter/ReadyToShoot` |
+
+`isReadyToShoot()` in `PrepareShotCommand` requires **both**: above 3500 RPM AND within 100 RPM of target. This means the robot won't feed at 3700 RPM when the target is 5000 — it waits until it actually reaches ~4900–5100 RPM.
+
+**`spinUpCommand(rpm)`:** overshoots by 15% (`rpm * 1.15`) until `isNearRPM(rpm)` — used in auto to pre-spin before shooting. The overshoot helps fight voltage sag during spinup.
+
+**Dashboard RPM:** the `Shooter/Dashboard RPM` SmartDashboard field (default 3750) is what Right Bumper reads. Adjust via Elastic/Shuffleboard to tune manual shot speed at an event.
+
+---
+
+### Hood
+
+Two PWM servos (PWM 3 and 4). Position is normalized 0.0–1.0 (clamped to 0.01–0.77). **There is no physical encoder** — position tracking is a software time model advancing at 20 mm/s over a 100 mm servo stroke. Full range travel time = 100/20 = **5 seconds**.
+
+**Shot table** (set in `PrepareShotCommand`):
+
+| Distance to hub | Shooter RPM | Hood position |
+|---|---|---|
+| 52" (~4.3 ft) | 5000 | 0.19 |
+| 114" (~9.5 ft) | 5000 | 0.40 |
+| 165" (~13.8 ft) | 5000 | 0.48 |
+
+Values between these distances are linearly interpolated. Values outside the range are clamped to the nearest edge. All three distances use 5000 RPM — only the hood angle changes. If shots are consistently high or low at a specific distance, adjust the hood position value for that row in `PrepareShotCommand.java`.
+
+**Testing the servo model:** In SmartDashboard → Hood → `Target Position`, write a value. Watch `Hood/CurrentPosition` advance in AdvantageScope — it should take ~1.5s to travel from 0.19 to 0.48. If the physical servo arrives before/after `Hood/IsWithinTolerance` becomes true, adjust `kMaxServoSpeed` in `Hood.java`.
+
+---
+
+### Floor
+
+Single TalonFX (CAN 15). Open-loop voltage only. FEED = 83% (9.96 V), REVERSE = −83%. **Supply current limit is 30 A** — the lowest on the robot. No sensors.
+
+`reverseCommand()` is bound to D-Pad Left alongside `shooter.reverseCommand()` — use this to unjam a note stuck at the floor-to-feeder transition.
+
+---
+
+### Feeder
+
+Single TalonFX (CAN 19). Velocity control at 5000 RPM. KP=1, KV. Coast mode. `feedCommand()` ends by calling `setPercentOutput(0)` rather than commanding 0 RPM — this avoids sending a VelocityVoltage request to reach exactly 0 on a coast-mode motor.
+
+---
+
+### Hanger
+
+Single TalonFX (CAN 14). MotionMagic position control. 6 inches travel over 142 motor rotations.
+
+| Position | Extension | When |
+|---|---|---|
+| `HOMED` | 0" | After homing hard stop |
+| `EXTEND_HOPPER` | 2" | After boot homing, clears chassis |
+| `HANGING` | 6" | D-Pad Up / raised during auto drive to tower |
+| `HUNG` | 0.2" | D-Pad Down / pulled after arriving at tower |
+
+Stator limit is **20 A** — conservative for initial testing. If the hanger stalls under actual robot weight during a climb, increase this to 40 A in `Hanger.java`. Watch `Hanger/StatorCurrent` in AdvantageScope — if it stays pegged at 20 A and extension stops moving, the limit is too low.
+
+Homing uses `kCancelSelf` — any D-Pad command issued during homing immediately cancels homing. This is intentional so you can override homing if needed.
+
+---
+
+### Limelight
+
+Pipeline 0 = AprilTag localization (default, always active). Pipeline 1 = Neural Detector fuel chase (only while Start is held).
+
+`getMeasurement()` fuses MegaTag1 (rotation) + MegaTag2 (position) into a single combined pose estimate. Returns `Optional.empty()` if either estimate has zero tags visible — the Kalman filter simply doesn't get an update that cycle.
+
+`idle()` — a no-op command that holds the Limelight subsystem requirement, preempting the default `updateVisionCommand()`. Used during Choreo drive segments in the Outpost-and-Depot auto to prevent fast-motion vision estimates from corrupting odometry.
+
+---
+
+## Command Reference
+
+### ManualDriveCommand — Three-State FSM
+
+```
+IDLING                    → no stick input, no force field → wheels lock in place
+DRIVING_WITH_MANUAL_ROTATION → rotation stick active, or translating without a locked heading
+DRIVING_WITH_LOCKED_HEADING  → rotation stick released for 0.25 s → heading auto-locks
+```
+
+**Heading lock engages automatically** 0.25 s after the rotation stick returns to zero. It holds the heading using `FieldCentricFacingAngle` with heading PID P=5. A/B/X/Y snap-set the locked heading explicitly. The Back button re-zeros the field-centric reference to the current robot heading (`seedFieldCentric()`).
+
+**Robot-centric mode** (toggle `Field Centric` to false in Elastic): bypasses the heading-lock state machine entirely, caps speed at 4.0 m/s, and disables force field (forces are field-relative and don't apply in robot-centric mode).
+
+**Force field** adds velocity offsets from `deploy/forcefield/default.json`:
+- Wall repulsion (all 4 walls, 1 m falloff)
+- Hub exclusion annulus (Blue and Red hubs)
+- Shooting position Gaussian attractor (Blue/Red shooting zones)
+
+Toggle with Right Stick click. Watch `SmartDashboard/ForceField/Enabled` and `AdvantageKit/RealOutputs/ForceField/NetForceX/Y` to confirm it's active and applying forces.
+
+---
+
+### AimAndDriveCommand
+
+Called inside `aimAndShoot()`. Runs `FieldCentricFacingAngle` with a target direction computed every cycle:
+
+```
+targetDirection = angle(hubPosition − robotPosition) + 180°
+```
+
+The +180° is because the **shooter is on the back of the robot** — the robot must point its rear at the hub. Hub positions are in `Landmarks.java` and are alliance-aware.
+
+`isAimed()` returns true when the heading error is within **5°**. This is the gate that must be satisfied (along with shooter RPM) before the feed sequence starts.
+
+---
+
+### The Full Shot Sequence — `aimAndShoot()` Timeline
+
+When **Right Trigger** is held, this runs:
+
+```
+t = 0 ms     AimAndDriveCommand starts → robot rotates toward hub
+t = 0 ms     waitSeconds(0.25) starts
+t = 250 ms   PrepareShotCommand starts → sets shooter RPM + hood angle from distance table
+t = ???      BOTH isAimed() (±5°) AND isReadyToShoot() (≥3500 RPM + within ±100 RPM of target + hood at position) → feed() starts
+t = +250 ms  feed() waits 250 ms buffer
+t = +250 ms  feeder.feedCommand() starts at 5000 RPM
+t = +375 ms  floor.feedCommand() (83%) + intake.agitateCommand() start (125 ms after feeder)
+```
+
+The staggered floor/feeder start prevents note jams at the feeder entry.
+
+**Why the 250 ms wait before PrepareShotCommand?** Gives the robot a moment to start rotating before commanding the shooter — avoids a race condition where the hood moves and shooter spins while the robot is still aimed far away.
+
+---
+
+### `shootManually()` — Right Bumper
+
+Reads `dashboardTargetRPM` at the moment you press the button (via `defer()`), spins up the shooter to that RPM (with 15% overshoot), then feeds once `isAboveFeedThreshold()` (≥3500 RPM) is met. Uses the looser gate (not `isVelocityWithinTolerance`) because in manual mode there's no hood angle math — you're shooting by feel, so slightly early is acceptable.
+
+---
+
+### FuelChaseCommand — Start Button (hold)
+
+1. Switches Limelight to pipeline 1 (Neural Detector).
+2. Every cycle: reads all `RawDetection[]` from Limelight, computes area-weighted centroid (`txnc`).
+3. Drives forward at 30% max speed (1.75 m/s). Rotates toward centroid with proportional gain 0.7.
+4. Runs intake pivot to INTAKE (−4°) and rollers at 80%.
+5. On end: stops rollers, stows intake to STOWED, resets pipeline to 0.
+
+If no detection is visible, forward velocity drops to 0 (robot stops in place but stays in chase mode). Watch `FuelChase/HasTarget` and `FuelChase/TargetTxnc` in AdvantageScope.
+
+---
+
+### Auto Routine Event Structure
+
+Every auto routine follows the same ChoreoLib pattern:
+
+```java
+routine.active().onTrue(...)              // fires once when routine becomes active
+trajectory.active().whileTrue(...)        // fires while the trajectory segment is running
+trajectory.done().onTrue(...)             // fires once when a segment completes
+trajectory.atTime(t).onTrue(...)          // fires at t seconds into the segment
+trajectory.atTimeBeforeEnd(t).onTrue(...) // fires t seconds before the segment ends
+```
+
+All of these are WPILib `Trigger` objects — they behave exactly like button bindings. Commands scheduled from these triggers are subject to the same subsystem requirement rules.
+
+**`resetOdometry()` is critical in auto.** It hard-sets the robot pose to the trajectory start position. If the robot is not physically placed at that exact start position before auto begins, the Choreo PID corrections will fight the wrong reference and the robot will miss the tower.
+
+---
+
+## Robot Testing Guide
+
+Work through steps in order — each one validates that the next is safe to run.
+
+### Step 0 — Pre-Power Checklist (30 min before first robot session)
+
+Open Phoenix Tuner X with robot powered. Confirm every CAN device appears and is online:
+
+- CAN IDs 1–12 (swerve motors + encoders), 13 (Pigeon 2)
+- CAN IDs 14, 15, 16, 18, 19, 20, 21, 22 (mechanisms)
+- Hood servos physically wired to PWM 3 and 4
+
+Any red/offline device in Tuner X = that subsystem will behave unpredictably. Fix the wiring or CAN ID mismatch before enabling.
+
+Also confirm:
+- Limelight powered and pingable at `limelight.local` or `10.104.11.11`
+- Alliance color shows correctly in Driver Station status bar
+- `AdvantageKit/DriverStation/AllianceStation` in AdvantageScope matches physical alliance
+
+---
+
+### Step 1 — Homing (first enable, robot on ground)
+
+Enable Teleop. Watch in AdvantageScope:
+
+```
+AdvantageKit/RealOutputs/Intake/ActiveCommand       → ConditionalCommand then completes
+AdvantageKit/RealOutputs/Intake/PivotAngleDegrees   → snaps to ~110°, then 100° (STOWED)
+AdvantageKit/RealOutputs/Intake/IsHomed             → false → true
+AdvantageKit/RealOutputs/Hanger/ActiveCommand       → homing sequence runs
+AdvantageKit/RealOutputs/Hanger/ExtensionInches     → 0 → 2" (EXTEND_HOPPER)
+AdvantageKit/RealOutputs/Hanger/IsHomed             → false → true
+```
+
+**Red flags:**
+- Intake motor runs outward but current never spikes above 6 A → hard stop not being reached → mechanical binding or wrong motor direction
+- Hanger motor runs but current never exceeds 0.4 A → threshold too high for your actual motor; watch `Hanger/SupplyCurrent` and lower threshold in `Hanger.homingCommand()`
+- Either homing hangs for >10 s → disable immediately, check physical mechanism
+
+---
+
+### Step 2 — Drive Validation
+
+Drive in all directions, field-centric on. Confirm:
+- Left stick forward = robot drives toward opponent wall
+- Rotate stick then release → robot holds heading after 0.25 s (watch `ManualDrive/State` if logged)
+- A/B/X/Y → heading locks to 180°/CW90°/CCW90°/0°
+- Back button → field-centric re-zeros to current heading
+- Right Stick click → `SmartDashboard/ForceField/Enabled` flips, robot subtly pushed away from walls
+
+If the robot drives sideways or in the wrong direction at first enable: the operator perspective hasn't been set yet (FMS not connected). Press Back to force a re-zero.
+
+---
+
+### Step 3 — Shooter RPM Validation (robot on blocks)
+
+Hold Right Bumper (dashboard manual shoot, default 3750 RPM). Watch:
+
+```
+AdvantageKit/RealOutputs/Shooter/Left/RPM
+AdvantageKit/RealOutputs/Shooter/Middle/RPM
+AdvantageKit/RealOutputs/Shooter/Right/RPM
+AdvantageKit/RealOutputs/Shooter/ReadyToShoot
+```
+
+All three motors should ramp to ~3750 RPM and `ReadyToShoot` should become true without oscillation. If you see RPM overshoot cycling (e.g., 4200 → 3400 → 4200), KP is too high — reduce from 0.5 in `Shooter.configureMotor()`.
+
+Try changing `Dashboard RPM` in Shuffleboard to 5000, release and re-hold Right Bumper — confirm it hits 5000 RPM.
+
+---
+
+### Step 4 — Hood Servo Validation
+
+In Shuffleboard → Hood → `Target Position` (writable):
+- Write `0.19` → servo moves (close-range shot position)
+- Write `0.40` → mid-range
+- Write `0.48` → far range
+
+Time the travel from 0.19 to 0.48 manually. Expected: ~1.45 s (`(0.48−0.19) × 100 mm / 20 mm/s`). If the physical servo arrives noticeably before or after `Hood/IsWithinTolerance` turns true, adjust `kMaxServoSpeed` in `Hood.java`.
+
+---
+
+### Step 5 — Intake Cycle
+
+Hold LT → pivot deploys to −4°, rollers spin. Watch `Intake/PivotAngleDegrees` in AdvantageScope.
+
+Release LT → rollers stop, pivot returns to 100° (auto-stow behavior).
+
+Hold LB → immediate stow to 100°.
+
+**If pivot doesn't stow:** check `Intake/IsHomed` — if false, homing didn't complete. Disable, check mechanism, re-enable to trigger homing.
+
+---
+
+### Step 6 — Full Shot Sequence
+
+Place robot at 52" from hub (4.3 ft). Hold Right Trigger. Watch in AdvantageScope in order:
+
+```
+1. AimAndDrive/HeadingErrorDeg     → approaches 0
+2. AimAndDrive/IsAimed             → true (within 5°)
+3. Shooter/Left/RPM                → ramps to 5000
+4. Hood/TargetPosition             → 0.19
+5. Hood/IsWithinTolerance          → true
+6. Shooter/ReadyToShoot            → true (≥3500 RPM + within ±100 RPM of 5000)
+7. Feeder/RPM                      → 5000
+8. Floor/RPM                       → positive (83%)
+9. Intake/ActiveCommand            → agitateCommand
+```
+
+**If shot doesn't trigger:**
+- `AimAndDrive/IsAimed = false` → robot not rotating far enough. Check `AimAndDrive/HeadingErrorDeg` — if error is large and not shrinking, heading PID (P=5) may need increase
+- `Shooter/ReadyToShoot = false` → shooter not reaching 5000 RPM. Watch `Shooter/Left/SupplyVoltage` — low battery can prevent reaching target RPM
+- Hood not at tolerance → `kMaxServoSpeed` model mismatch; increase `kMaxServoSpeed` slightly
+
+---
+
+### Step 7 — Hanger Cycle
+
+D-Pad Up → watch `Hanger/ExtensionInches` rise smoothly to 6" via MotionMagic.
+
+D-Pad Down → watch pull to 0.2". Check `Hanger/StatorCurrent` — if it pegs at 20 A and stops moving under robot weight, increase stator limit to 40 A in `Hanger.java`.
+
+---
+
+### Step 8 — Auto: Shoot Only
+
+Select "Shoot Only" in the Auto Chooser on Elastic. Enable Auto. Robot should aim, spin up, and feed within 5 seconds. This validates the full shot pipeline in auto mode.
+
+---
+
+### Step 9 — Auto: Shoot and Climb — Center
+
+Place robot at the center start position: `(3.598 m, 4.036 m, facing 180°)`. Select "Shoot and Climb — Center". Enable Auto.
+
+Watch in AdvantageScope:
+```
+Swerve/EstimatedPose  → resets to (3.598, 4.036), then tracks the 1.649 s path to (0.941, 3.564)
+Hanger/ExtensionInches → rises to 6" while driving, drops to 0.2" on arrival
+Limelight/ActiveCommand → "idle" RunCommand during drive (not updateVisionCommand)
+```
+
+If the robot drifts off path, check `Limelight/MeasurementAccepted` — if vision measurements are feeding during the drive segment they may be corrupting odometry. Confirm `limelight.idle()` is firing on `trajectory.active().whileTrue(...)` bindings.
+
+---
+
+### AdvantageScope Panel Setup
+
+Configure these panels before arriving at the robot. Save the layout so it reloads automatically.
+
+**Panel 1 — Drive health:**
+```
+/AdvantageKit/RealOutputs/Swerve   (field pose widget — show robot + vision pose)
+/AdvantageKit/RealOutputs/Limelight/EstimatedPose
+/AdvantageKit/RealOutputs/Limelight/MeasurementAccepted
+/AdvantageKit/DriverStation/Enabled
+/AdvantageKit/Robot/BatteryVoltage
+```
+
+**Panel 2 — Shot pipeline:**
+```
+/AdvantageKit/RealOutputs/Shooter/Left/RPM
+/AdvantageKit/RealOutputs/Shooter/Middle/RPM
+/AdvantageKit/RealOutputs/Shooter/Right/RPM
+/AdvantageKit/RealOutputs/Shooter/ReadyToShoot
+/AdvantageKit/RealOutputs/Hood/CurrentPosition
+/AdvantageKit/RealOutputs/Hood/TargetPosition
+/AdvantageKit/RealOutputs/Hood/IsWithinTolerance
+/AdvantageKit/RealOutputs/AimAndDrive/IsAimed
+/AdvantageKit/RealOutputs/AimAndDrive/HeadingErrorDeg
+/SmartDashboard/Distance to Hub (inches)
+```
+
+**Panel 3 — Mechanism health:**
+```
+/AdvantageKit/RealOutputs/Intake/PivotAngleDegrees
+/AdvantageKit/RealOutputs/Intake/IsHomed
+/AdvantageKit/RealOutputs/Hanger/ExtensionInches
+/AdvantageKit/RealOutputs/Hanger/StatorCurrent
+/AdvantageKit/RealOutputs/Feeder/RPM
+/AdvantageKit/RealOutputs/Floor/RPM
+/AdvantageKit/RealOutputs/Limelight/ActiveCommand
+```
+
+---
+
+### Post-Match Log Retrieval
+
+Logs are written to the roboRIO at `/home/lvuser/logs/` as `.wpilog` files.
+
+```bash
+sftp lvuser@10.104.11.2
+sftp> get /home/lvuser/logs/*.wpilog ./logs/
+```
+
+Open the `.wpilog` file in AdvantageScope for full post-match replay of every sensor value, command state, and subsystem output.
+
+---
+
+### Tuning Reference
+
+| What to tune | Where in code | When to tune |
+|---|---|---|
+| Shooter feed gate RPM (3500) | `Shooter.kFeedThresholdRPM` | If feeding too early/late |
+| Shooter KP (0.5) | `Shooter.configureMotor()` Slot0 | If RPM oscillates instead of settling |
+| Hood servo speed model (20 mm/s) | `Hood.kMaxServoSpeed` | If tolerance gates too early/late |
+| Aim heading PID (P=5) | `AimAndDriveCommand` `withHeadingPID(5,0,0)` | If aiming is sluggish or oscillates |
+| Path follow X/Y PID (P=10) | `Swerve.pathXController / pathYController` | If auto path drifts laterally |
+| Path follow theta PID (P=7) | `Swerve.pathThetaController` | If auto heading drifts |
+| Vision std devs ([0.1, 0.1, 10.0]) | `Limelight.getMeasurement()` | If pose jumps during auto |
+| Hanger stator limit (20 A) | `Hanger` config `.withStatorCurrentLimit(Amps.of(20))` | If climb stalls under robot weight |
+| Shot table distances/RPMs | `PrepareShotCommand` static initializer | After first live shots |
+
+---
+
+### Common Issues and Fixes
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Robot drives in wrong direction on enable | Alliance color not set / FMS not connected | Press **Back** to re-zero, or manually set alliance in Driver Station |
+| Intake homing hangs indefinitely | Current threshold too high (6 A never reached) | Watch `Intake/PivotSupplyCurrent`, adjust threshold |
+| Hanger homing hangs | Current threshold too high (0.4 A never reached) | Watch `Hanger/SupplyCurrent`, adjust threshold |
+| Shooter never reaches target RPM | Low battery voltage, or KP needs increase | Check `Shooter/SupplyVoltage` — if <11 V, charge battery |
+| Shot never triggers — robot is aimed but not ready | Shooter not settling within ±100 RPM of target | Increase heading PID if aiming takes too long; check shooter wiring |
+| Hood `IsWithinTolerance` comes true before servo moves | `kMaxServoSpeed` too fast in software model | Decrease `kMaxServoSpeed` in `Hood.java` |
+| Auto drifts off path | Odometry corrupted by moving vision estimates | Confirm `limelight.idle()` fires on `trajectory.active().whileTrue()` |
+| Wrong hub aimed at in auto | Alliance color wrong at auto start | Verify FMS shows correct alliance before auto starts |
+| Robot misses tower in Shoot-and-Climb | Not placed at correct start position | Place precisely at trajectory start pose before auto |

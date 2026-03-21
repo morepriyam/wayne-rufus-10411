@@ -27,9 +27,9 @@ public record ChoreoTraj(
     public static final ChoreoTraj OutpostAndDepotTrajectory = new ChoreoTraj(
         "OutpostAndDepotTrajectory",
         OptionalInt.empty(),
-        11.3563,
+        7.84369,
         new Pose2d(3.59816, 0.63985, Rotation2d.fromRadians(3.14159)),
-        new Pose2d(0.94136, 3.56436, Rotation2d.fromRadians(3.14159))
+        new Pose2d(2.62085, 4.01626, Rotation2d.fromRadians(0))
     );
     /** ERROR: Can only use letters, 0-9, and _. Can't use $. Rename it in the Choreo app to fix this error. */
     public static final ChoreoTraj OutpostAndDepotTrajectory$0 = new ChoreoTraj(
@@ -51,17 +51,16 @@ public record ChoreoTraj(
     public static final ChoreoTraj OutpostAndDepotTrajectory$2 = new ChoreoTraj(
         "OutpostAndDepotTrajectory",
         OptionalInt.of(2),
-        2.5827799999999996,
+        2.625279999999999,
         new Pose2d(0.66833, 5.96377, Rotation2d.fromRadians(3.14159)),
-        new Pose2d(2.49839, 4.03528, Rotation2d.fromRadians(0))
+        new Pose2d(2.62085, 4.01626, Rotation2d.fromRadians(0))
     );
-    /** ERROR: Can only use letters, 0-9, and _. Can't use $. Rename it in the Choreo app to fix this error. */
-    public static final ChoreoTraj OutpostAndDepotTrajectory$3 = new ChoreoTraj(
-        "OutpostAndDepotTrajectory",
-        OptionalInt.of(3),
-        3.555109999999999,
-        new Pose2d(2.49839, 4.03528, Rotation2d.fromRadians(0)),
-        new Pose2d(0.94136, 3.56436, Rotation2d.fromRadians(3.14159))
+    public static final ChoreoTraj BackUpAndShootTrajectory = new ChoreoTraj(
+        "BackUpAndShootTrajectory",
+        OptionalInt.empty(),
+        1.13847,
+        new Pose2d(3.598, 4, Rotation2d.fromRadians(0)),
+        new Pose2d(2.2, 4, Rotation2d.fromRadians(0))
     );
 
     /**
@@ -73,7 +72,7 @@ public record ChoreoTraj(
         Map.entry("OutpostAndDepotTrajectory$0", OutpostAndDepotTrajectory$0),
         Map.entry("OutpostAndDepotTrajectory$1", OutpostAndDepotTrajectory$1),
         Map.entry("OutpostAndDepotTrajectory$2", OutpostAndDepotTrajectory$2),
-        Map.entry("OutpostAndDepotTrajectory$3", OutpostAndDepotTrajectory$3)
+        Map.entry("BackUpAndShootTrajectory", BackUpAndShootTrajectory)
     );
 
     /**

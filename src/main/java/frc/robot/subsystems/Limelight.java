@@ -12,6 +12,7 @@ import org.littletonrobotics.junction.Logger;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.LimelightHelpers;
 import frc.robot.LimelightHelpers.PoseEstimate;
@@ -25,15 +26,6 @@ public class Limelight extends SubsystemBase {
         this.name = name;
         this.telemetryTable = NetworkTableInstance.getDefault().getTable("SmartDashboard/" + name);
         this.posePublisher = telemetryTable.getStructTopic("Estimated Robot Pose", Pose2d.struct).publish();
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    /** Switches the active Limelight pipeline. Pipeline 0 = AprilTag, 1 = Fuel Detector. */
-    public void setPipeline(int index) {
-        LimelightHelpers.setPipelineIndex(name, index);
     }
 
     public Optional<Measurement> getMeasurement(Pose2d currentRobotPose) {
@@ -70,6 +62,15 @@ public class Limelight extends SubsystemBase {
         Logger.recordOutput("Limelight/MeasurementAccepted", true);
 
         return Optional.of(new Measurement(poseEstimate_MegaTag2, standardDeviations));
+    }
+
+    /**
+     * No-op command that holds the Limelight subsystem requirement, suppressing the default
+     * vision-update command while the robot is driving along a trajectory (prevents fast-motion
+     * pose estimates from corrupting odometry).
+     */
+    public Command idle() {
+        return run(() -> {});
     }
 
     public static class Measurement {

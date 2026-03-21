@@ -137,6 +137,10 @@ public class Intake extends SubsystemBase {
         rollerMotor.getConfigurator().apply(config);
     }
 
+    public boolean isAtTarget() {
+        return isPositionWithinTolerance();
+    }
+
     private boolean isPositionWithinTolerance() {
         final Angle currentPosition = pivotMotor.getPosition().getValue();
         final Angle targetPosition = pivotMotionMagicRequest.getPositionMeasure();
@@ -170,7 +174,10 @@ public class Intake extends SubsystemBase {
                 set(Position.INTAKE);
                 set(Speed.INTAKE);
             },
-            () -> set(Speed.STOP)
+            () -> {
+                set(Speed.STOP);
+                set(Position.STOWED);
+            }
         );
     }
 

@@ -29,18 +29,17 @@ public class AimAndDriveCommand extends Command {
     private final DriveInputSmoother inputSmoother;
 
     private final SwerveRequest.FieldCentricFacingAngle fieldCentricFacingAngleRequest = new SwerveRequest.FieldCentricFacingAngle()
-        .withRotationalDeadband(Driving.kPIDRotationDeadband)
-        .withMaxAbsRotationalRate(Driving.kMaxRotationalRate)
-        .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
-        .withSteerRequestType(SteerRequestType.MotionMagicExpo)
-        .withForwardPerspective(ForwardPerspectiveValue.OperatorPerspective)
-        .withHeadingPID(5, 0, 0);
+            .withRotationalDeadband(Driving.kPIDRotationDeadband)
+            .withMaxAbsRotationalRate(Driving.kMaxRotationalRate)
+            .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
+            .withSteerRequestType(SteerRequestType.MotionMagicExpo)
+            .withForwardPerspective(ForwardPerspectiveValue.OperatorPerspective)
+            .withHeadingPID(5, 0, 0);
 
     public AimAndDriveCommand(
-        Swerve swerve,
-        DoubleSupplier forwardInput,
-        DoubleSupplier leftInput
-    ) {
+            Swerve swerve,
+            DoubleSupplier forwardInput,
+            DoubleSupplier leftInput) {
         this.swerve = swerve;
         this.inputSmoother = new DriveInputSmoother(forwardInput, leftInput);
         addRequirements(swerve);
@@ -53,7 +52,8 @@ public class AimAndDriveCommand extends Command {
     public boolean isAimed() {
         final Rotation2d targetHeading = fieldCentricFacingAngleRequest.TargetDirection;
         final Rotation2d currentHeadingInBlueAlliancePerspective = swerve.getState().Pose.getRotation();
-        final Rotation2d currentHeadingInOperatorPerspective = currentHeadingInBlueAlliancePerspective.rotateBy(swerve.getOperatorForwardDirection());
+        final Rotation2d currentHeadingInOperatorPerspective = currentHeadingInBlueAlliancePerspective
+                .rotateBy(swerve.getOperatorForwardDirection());
         return GeometryUtil.isNear(targetHeading, currentHeadingInOperatorPerspective, kAimTolerance);
     }
 
@@ -61,7 +61,8 @@ public class AimAndDriveCommand extends Command {
         final Translation2d hubPosition = Landmarks.hubPosition();
         final Translation2d robotPosition = swerve.getState().Pose.getTranslation();
         final Rotation2d hubDirectionInBlueAlliancePerspective = hubPosition.minus(robotPosition).getAngle();
-        final Rotation2d hubDirectionInOperatorPerspective = hubDirectionInBlueAlliancePerspective.rotateBy(swerve.getOperatorForwardDirection());
+        final Rotation2d hubDirectionInOperatorPerspective = hubDirectionInBlueAlliancePerspective
+                .rotateBy(swerve.getOperatorForwardDirection());
         // Shooter is on the back of the robot, so point the back at the hub
         return hubDirectionInOperatorPerspective.plus(Rotation2d.fromDegrees(180));
     }
@@ -71,13 +72,12 @@ public class AimAndDriveCommand extends Command {
         final ManualDriveInput input = inputSmoother.getSmoothedInput();
         final Rotation2d targetDirection = getDirectionToHub();
         swerve.setControl(
-            fieldCentricFacingAngleRequest
-                .withVelocityX(Driving.kMaxSpeed.times(input.forward))
-                .withVelocityY(Driving.kMaxSpeed.times(input.left))
-                .withTargetDirection(targetDirection)
-        );
+                fieldCentricFacingAngleRequest
+                        .withVelocityX(Driving.kMaxSpeed.times(input.forward))
+                        .withVelocityY(Driving.kMaxSpeed.times(input.left))
+                        .withTargetDirection(targetDirection));
         final Rotation2d currentHeading = swerve.getState().Pose.getRotation()
-            .rotateBy(swerve.getOperatorForwardDirection());
+                .rotateBy(swerve.getOperatorForwardDirection());
         Logger.recordOutput("AimAndDrive/TargetHeadingDeg", targetDirection.getDegrees());
         Logger.recordOutput("AimAndDrive/CurrentHeadingDeg", currentHeading.getDegrees());
         Logger.recordOutput("AimAndDrive/HeadingErrorDeg", targetDirection.minus(currentHeading).getDegrees());
