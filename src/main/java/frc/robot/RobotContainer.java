@@ -91,7 +91,7 @@ public class RobotContainer {
             () -> -driver.getLeftX());
     private final ManualDriveCommand manualDriveCommand = new ManualDriveCommand(
             swerve,
-            // Left stick translation scaled for gentler control.
+            // Left stick translation scaled (see Driving.kManualTranslationScale).
             () -> -driver.getLeftY() * Driving.kManualTranslationScale,
             () -> -driver.getLeftX() * Driving.kManualTranslationScale,
             // Right stick X -> rotation, scaled down for gentler control.

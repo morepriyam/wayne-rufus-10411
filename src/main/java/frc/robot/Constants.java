@@ -32,8 +32,8 @@ public final class Constants {
         public static final AngularVelocity kMaxRotationalRate = RotationsPerSecond.of(1);
         /** Scales manual rotation stick input to make turning easier to control. */
         public static final double kManualRotationScale = 0.7;
-        /** Scales manual translation stick input for gentler driving control. */
-        public static final double kManualTranslationScale = 0.7;
+        /** Scales manual translation (left stick) input; 1.0 = full stick maps to max translation. */
+        public static final double kManualTranslationScale = 1.45;
         public static final AngularVelocity kPIDRotationDeadband = kMaxRotationalRate.times(0.005);
     }
 
