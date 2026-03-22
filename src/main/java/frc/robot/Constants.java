@@ -4,7 +4,6 @@
 
 package frc.robot;
 
-import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 
@@ -14,18 +13,26 @@ import edu.wpi.first.units.measure.LinearVelocity;
 import frc.robot.generated.TunerConstants;
 
 /**
- * The Constants class provides a convenient place for teams to hold robot-wide numerical or boolean
- * constants. This class should not be used for any other purpose. All constants should be declared
+ * The Constants class provides a convenient place for teams to hold robot-wide
+ * numerical or boolean
+ * constants. This class should not be used for any other purpose. All constants
+ * should be declared
  * globally (i.e. public static). Do not put anything functional in this class.
  *
- * <p>It is advised to statically import this class (or one of its inner classes) wherever the
+ * <p>
+ * It is advised to statically import this class (or one of its inner classes)
+ * wherever the
  * constants are needed, to reduce verbosity.
  */
 public final class Constants {
     public static class Driving {
         public static final LinearVelocity kMaxSpeed = TunerConstants.kSpeedAt12Volts;
-        public static final LinearVelocity kLimitedSpeed = LinearVelocity.ofBaseUnits(4, MetersPerSecond);
-        public static final AngularVelocity kMaxRotationalRate = RotationsPerSecond.of(1);
+        /**
+         * Robot-centric translation cap; field-centric uses {@link #kMaxSpeed}
+         * directly.
+         */
+        public static final LinearVelocity kLimitedSpeed = kMaxSpeed;
+        public static final AngularVelocity kMaxRotationalRate = RotationsPerSecond.of(1.5);
         public static final AngularVelocity kPIDRotationDeadband = kMaxRotationalRate.times(0.005);
     }
 
@@ -49,10 +56,10 @@ public final class Constants {
          * Derived from TunerConstants module positions (10.875", 10.125").
          */
         public static final Translation2d[] kCornerOffsets = new Translation2d[] {
-            new Translation2d(TunerConstants.FrontLeft.LocationX, TunerConstants.FrontLeft.LocationY),
-            new Translation2d(TunerConstants.FrontRight.LocationX, TunerConstants.FrontRight.LocationY),
-            new Translation2d(TunerConstants.BackLeft.LocationX, TunerConstants.BackLeft.LocationY),
-            new Translation2d(TunerConstants.BackRight.LocationX, TunerConstants.BackRight.LocationY),
+                new Translation2d(TunerConstants.FrontLeft.LocationX, TunerConstants.FrontLeft.LocationY),
+                new Translation2d(TunerConstants.FrontRight.LocationX, TunerConstants.FrontRight.LocationY),
+                new Translation2d(TunerConstants.BackLeft.LocationX, TunerConstants.BackLeft.LocationY),
+                new Translation2d(TunerConstants.BackRight.LocationX, TunerConstants.BackRight.LocationY),
         };
     }
 }
